@@ -1,0 +1,43 @@
+{
+  "version": "0.1.1",
+  "name": "TheTown Client",
+  "title": "Welcome! :P",
+  "subtitle": "${name} v${version}",
+  "sync": {
+    "url": "http://46.4.195.36"
+  },
+  "client": {
+    "armaPath": "",
+    "modPath": "",
+    "ShowStartParameter": true,
+    "CheckModset": false,
+    "UseWorkshop": false,
+    "behaviourAfterStart": "nothing",
+    "language": "system"
+  },
+  "arma": {
+    "Profile": "",
+    "Use64BitClient": true,
+    "NoSplash": true,
+    "SkipIntro": true,
+    "World": "",
+    "MaxMem": -1,
+    "MaxVRAM": -1,
+    "NoCB": false,
+    "CpuCount": 0,
+    "ExThreads": "",
+    "Malloc": "",
+    "NoLogs": false,
+    "EnableHT": false,
+    "Hugepages": false,
+    "NoPause": false,
+    "ShowScriptErrors": true,
+    "FilePatching": false,
+    "Init": "",
+    "Beta": "",
+    "CrashDiag": false,
+    "Window": false,
+    "PosX": -1,
+    "PosY": -1
+  }
+}
