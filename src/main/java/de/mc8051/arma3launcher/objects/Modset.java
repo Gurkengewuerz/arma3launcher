@@ -56,6 +56,10 @@ public class Modset {
         return type;
     }
 
+    public void play() {
+        // TODO: Implement play with this Modset
+    }
+
     public static enum Type {
         SERVER,
         CLIENT

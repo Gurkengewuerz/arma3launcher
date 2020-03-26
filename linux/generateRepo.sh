@@ -28,15 +28,15 @@ while IFS= read -r line; do
     mustgenerate=false
     zsyncfile="${line}.zsync"
 
-    filebyte=$(wc -c < ${line})
-    filedate=$(stat -c %Y ${line})
+    filebyte=$(wc -c < "${line}")
+    filedate=$(stat -c %Y "${line}")
 
-    zsyncfiledate=$(strings ${zsyncfile} 2>/dev/null | grep -m 1 MTime | cut -d" " -f2-)
+    zsyncfiledate=$(strings "${zsyncfile}" 2>/dev/null | grep -m 1 MTime | cut -d" " -f2-)
 
     if [ ! -f "$zsyncfile" ]; then
         echo "$zsyncfile does not exist"
         mustgenerate=true
-    elif [[ ! $(strings ${zsyncfile} | grep -m 1 Length | cut -d" " -f2) == $filebyte ]]; then # Check file length
+    elif [[ ! $(strings "${zsyncfile}" | grep -m 1 Length | cut -d" " -f2) == $filebyte ]]; then # Check file length
         echo "$zsyncfile does not have corret length"
         mustgenerate=true
     elif [[ ! $filedate == $(date -d "${zsyncfiledate}" +"%s") ]]; then # Check date
@@ -46,11 +46,11 @@ while IFS= read -r line; do
 
     if [ "$mustgenerate" = true ]; then
         echo "Generate $zsyncfile"
-        rm ${zsyncfile} 2> /dev/null
-        dirfile=$(dirname ${line})
-        filename=$(basename ${line})
-        filenamezsync=$(basename ${zsyncfile})
-        $(cd ${dirfile} && zsyncmake -o ${filenamezsync} ${filename})
+        rm "${zsyncfile}" 2> /dev/null
+        dirfile=$(dirname "${line}")
+        filename=$(basename "${line}")
+        filenamezsync=$(basename "${zsyncfile}")
+        $(cd "${dirfile}" && zsyncmake -o "${filenamezsync}" "${filename}")
         if [ $? -eq 0 ]; then
             echo "Success: Generated ${zsyncfile}"
         else
@@ -67,10 +67,10 @@ echo -e "===== ===== ===== ===== ===== =====\n"
 echo "===== ===== ===== DELETE SINGLE ZFILE WITHOUT FILE ===== ===== ====="
 ZSYNCLIST=$(find . -name "*.zsync")
 while IFS= read -r zfile; do
-    ORIG=$(echo ${zfile} | rev | cut -c7- | rev)
+    ORIG=$(echo "${zfile}" | rev | cut -c7- | rev)
     if [ ! -f "$ORIG" ]; then
         echo "$ORIG does not exist"
-        rm ${zfile}
+        rm "${zfile}"
     fi
 done <<< "$ZSYNCLIST"
 echo -e "===== ===== ===== ===== ===== =====\n"
@@ -85,18 +85,18 @@ while IFS= read -r folder; do
         echo "is dir"
         x=""
         foldersize=0
-        FILEFOLDER=$(find ${folder} -type f ! -path "*.zsync" | sed 's|^./||')
+        FILEFOLDER=$(find "${folder}" -type f ! -path "*.zsync" | sed 's|^./||')
         while IFS= read -r folderfile; do
-            filebyte=$(wc -c < ${folderfile})
+            filebyte=$(wc -c < "${folderfile}")
             foldersize=$(expr $foldersize + $filebyte)
-            name=$(echo ${folderfile} | cut -d"/" -f2-)
+            name=$(echo "${folderfile}" | cut -d"/" -f2-)
             x="\"${name}\":${filebyte},${x}"
         done <<< "$FILEFOLDER"
         x=$(echo ${x} | rev | cut -c2- | rev)
         JSONDATA+=( "\"${folder}\": {\"size\":${foldersize},\"content\":{${x}}}" )
     else
         echo "is file"
-        filebyte=$(wc -c < ${folder})
+        filebyte=$(wc -c < "${folder}")
         JSONDATA+=( "\"${folder}\": {\"size\":${filebyte}}" )
     fi
 done <<< "$FILELIST"

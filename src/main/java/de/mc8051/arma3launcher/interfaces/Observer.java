@@ -5,5 +5,5 @@ package de.mc8051.arma3launcher.interfaces;
  */
 public interface Observer {
 
-    public void update(Object o);
+    public void update(String o);
 }

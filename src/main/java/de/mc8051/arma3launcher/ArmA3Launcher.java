@@ -3,7 +3,6 @@ package de.mc8051.arma3launcher;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import de.mc8051.arma3launcher.repo.RepositoryManger;
 import de.mc8051.arma3launcher.steam.SteamTimer;
 import org.ini4j.Ini;
 
@@ -12,7 +11,6 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Timer;
@@ -81,7 +79,7 @@ public class ArmA3Launcher {
         frame.setLocationRelativeTo(null);
 
         steamTimer.scheduleAtFixedRate(
-                new SteamTimer(gui),
+                new SteamTimer(),
                 500,      // run first occurrence immediately
                 10000);  // run every thirty seconds
 
