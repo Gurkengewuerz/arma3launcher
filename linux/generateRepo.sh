@@ -22,6 +22,8 @@ if ! [ -x "$(command -v strings)" ]; then
   exit 1
 fi
 
+declare -A SHASUMS
+
 echo "===== ===== ===== GENERATE .ZSYNC ===== ===== ====="
 FILELIST=$(find . -type f ! -path "*/.sync*" ! -path "*.zsync")
 while IFS= read -r line; do
@@ -60,9 +62,11 @@ while IFS= read -r line; do
         echo "Nothing changed for $line"
     fi
 
+    SHA=$(strings "${zsyncfile}" | grep -m 1 SHA-1 | cut -d" " -f2)
+    SHASUMS[$(echo "${line}" | sed 's|^./||')]="${SHA}"
+
 done <<< "$FILELIST"
 echo -e "===== ===== ===== ===== ===== =====\n"
-
 
 echo "===== ===== ===== DELETE SINGLE ZFILE WITHOUT FILE ===== ===== ====="
 ZSYNCLIST=$(find . -name "*.zsync")
@@ -90,14 +94,14 @@ while IFS= read -r folder; do
             filebyte=$(wc -c < "${folderfile}")
             foldersize=$(expr $foldersize + $filebyte)
             name=$(echo "${folderfile}" | cut -d"/" -f2-)
-            x="\"${name}\":${filebyte},${x}"
+            x="\"${name}\":{\"size\": ${filebyte}, \"sha1\": \"${SHASUMS[$folderfile]}\"},${x}"
         done <<< "$FILEFOLDER"
         x=$(echo ${x} | rev | cut -c2- | rev)
         JSONDATA+=( "\"${folder}\": {\"size\":${foldersize},\"content\":{${x}}}" )
     else
         echo "is file"
         filebyte=$(wc -c < "${folder}")
-        JSONDATA+=( "\"${folder}\": {\"size\":${filebyte}}" )
+        JSONDATA+=( "\"${folder}\": {\"size\":${filebyte}, \"sha1\": \"${SHASUMS[$folder]}\"}" )
     fi
 done <<< "$FILELIST"
 
