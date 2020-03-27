@@ -151,16 +151,18 @@ public class RepositoryManger implements Observable {
                             Iterator<String> keys = content.keys();
                             while (keys.hasNext()) {
                                 String modfile = keys.next();
-                                long modfilesize = content.getLong(modfile);
+                                JSONObject jo = content.getJSONObject(modfile);
+                                long modfilesize = jo.getLong("size");
+                                String sha1 = jo.getString("sha1");
 
-                                modFiles.add(new ModFile(new File(finalModPath + File.separator + modname + File.separator + modfile), modfile, modfilesize));
+                                modFiles.add(new ModFile(new File(finalModPath + File.separator + modname + File.separator + modfile), modfile, modname, modfilesize, sha1));
                                 RepositoryManger.MOD_LIST_SIZE++;
                             }
 
                             MOD_LIST.add(new Mod(modname, modsize, modFiles));
                         } else {
                             // Single File
-                            MOD_LIST.add(new ModFile(new File(finalModPath + File.separator + modname), modname, modsize));
+                            MOD_LIST.add(new ModFile(new File(finalModPath + File.separator + modname), modname, modsize, jsonMod.getString("sha1")));
                             RepositoryManger.MOD_LIST_SIZE++;
                         }
 

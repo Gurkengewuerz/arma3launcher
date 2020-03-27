@@ -17,6 +17,7 @@ import java.util.EventListener;
 import java.util.EventObject;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by SomethingSomething https://stackoverflow.com/a/21851201/5605489
@@ -31,6 +32,7 @@ public class JCheckBoxTree extends JTree {
     // Defining data structure that will enable to fast check-indicate the state of each node
     // It totally replaces the "selection" mechanism of the JTree
     private class CheckedNode {
+        boolean isEnabled;
         boolean isSelected;
         boolean hasChildren;
         boolean allChildrenSelected;
@@ -38,6 +40,7 @@ public class JCheckBoxTree extends JTree {
         public CheckedNode(boolean isSelected_, boolean hasChildren_, boolean allChildrenSelected_) {
             isSelected = isSelected_;
             hasChildren = hasChildren_;
+            isEnabled = true;
             allChildrenSelected = allChildrenSelected_;
         }
     }
@@ -107,6 +110,11 @@ public class JCheckBoxTree extends JTree {
         return cn.isSelected && cn.hasChildren && !cn.allChildrenSelected;
     }
 
+    public boolean isSelected(TreePath path) {
+        CheckedNode cn = nodesCheckingState.get(path);
+        return cn.isSelected;
+    }
+
     public void resetCheckingState() {
         nodesCheckingState = new HashMap<TreePath, CheckedNode>();
         checkedPaths = new HashSet<TreePath>();
@@ -148,12 +156,21 @@ public class JCheckBoxTree extends JTree {
                                                       boolean hasFocus) {
             checkBox.setText(value.toString());
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+
+            if (node instanceof RepositoryTreeNode && ((RepositoryTreeNode) node).getLabelColor() != null) {
+                    checkBox.setForeground(((RepositoryTreeNode) node).getLabelColor());
+            } else {
+                checkBox.setForeground(UIManager.getColor("CheckBox.foreground"));
+            }
+
             TreePath tp = new TreePath(node.getPath());
             CheckedNode cn = nodesCheckingState.get(tp);
             if (cn == null) {
                 return this;
             }
+
             checkBox.setSelected(cn.isSelected);
+            checkBox.setEnabled(cn.isEnabled);
             checkBox.setOpaque(cn.isSelected && cn.hasChildren && !cn.allChildrenSelected);
             return this;
         }
@@ -264,6 +281,26 @@ public class JCheckBoxTree extends JTree {
         }
     }
 
+    public void setCheckboxesChecked(boolean state) {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) getModel().getRoot();
+        checkSubTree(new TreePath(node.getPath()), state);
+    }
+
+    public void setCheckboxesEnabled(TreePath tp, boolean state) {
+        CheckedNode cn = nodesCheckingState.get(tp);
+        cn.isEnabled = state;
+
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) tp.getLastPathComponent();
+        for (int i = 0; i < node.getChildCount(); i++) {
+            setCheckboxesEnabled(tp.pathByAddingChild(node.getChildAt(i)), state);
+        }
+    }
+
+    public void setCheckboxesEnabled(boolean state) {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) getModel().getRoot();
+        setCheckboxesEnabled(new TreePath(node.getPath()), state);
+    }
+
     public void expandAllNodes() {
         setTreeExpandedState(true);
     }
@@ -274,13 +311,13 @@ public class JCheckBoxTree extends JTree {
 
     private void setTreeExpandedState(boolean expanded) {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) getModel().getRoot();
-        setNodeExpandedState( node, expanded);
+        setNodeExpandedState(node, expanded);
     }
 
     private void setNodeExpandedState(DefaultMutableTreeNode node, boolean expanded) {
         ArrayList<TreeNode> list = Collections.list(node.children());
         for (TreeNode treeNode : list) {
-            setNodeExpandedState((DefaultMutableTreeNode)treeNode, expanded);
+            setNodeExpandedState((DefaultMutableTreeNode) treeNode, expanded);
         }
         if (!expanded && node.isRoot()) {
             return;

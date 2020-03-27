@@ -5,6 +5,7 @@ import de.mc8051.arma3launcher.model.JCheckBoxTree;
 import de.mc8051.arma3launcher.model.ModListRenderer;
 import de.mc8051.arma3launcher.model.PresetListRenderer;
 import de.mc8051.arma3launcher.model.PresetTableModel;
+import de.mc8051.arma3launcher.model.RepositoryTreeNode;
 import de.mc8051.arma3launcher.model.ServerTableModel;
 import de.mc8051.arma3launcher.objects.AbstractMod;
 import de.mc8051.arma3launcher.objects.Mod;
@@ -13,9 +14,12 @@ import de.mc8051.arma3launcher.objects.Modset;
 import de.mc8051.arma3launcher.objects.Server;
 import de.mc8051.arma3launcher.repo.FileChecker;
 import de.mc8051.arma3launcher.repo.RepositoryManger;
+import de.mc8051.arma3launcher.repo.SyncList;
+import de.mc8051.arma3launcher.repo.Syncer;
 import de.mc8051.arma3launcher.steam.SteamTimer;
 import de.mc8051.arma3launcher.utils.Callback;
 import de.mc8051.arma3launcher.utils.LangUtils;
+import humanize.Humanize;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -24,6 +28,7 @@ import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.text.DefaultFormatter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -37,11 +42,6 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -115,8 +115,8 @@ public class LauncherGUI implements Observer {
     private JProgressBar syncCheckProgress;
     private JButton syncCheckAbortButton;
     private JButton syncCheckButton;
-    private JProgressBar progressBar2;
-    private JProgressBar progressBar3;
+    public JProgressBar syncDownloadProgress;
+    public JProgressBar syncFileProgress;
     private JButton syncDownloadButton;
     private JButton syncDownloadAbortButton;
     private JButton syncPauseButton;
@@ -130,28 +130,32 @@ public class LauncherGUI implements Observer {
     private JLabel syncAddedFilesLabel;
     private JLabel syncChangedFilesLabel;
     private JLabel syncSizeLabel;
+    private JLabel syncChangedFileSizeLabel;
+    private JLabel syncFileCountLabel;
+    public JLabel syncDownloadedLabel;
+    public JLabel syncDownloadSpeedLabel;
 
     private JCheckBoxTree repoTree;
     private FileChecker fileChecker;
-
-    // TODO: Updater
-    /*
-        Prüfung
-        In eine Liste hinzufügen wenn Datei in modset.json (Neu runterladen), nicht in modset.json (zum Löschen) oder die Größe unterschiedlich ist (Geändert)
-        Checkboxen beim Syncronisieren deaktivieren
-     */
+    private Syncer syncer;
+    private SyncList lastSynclist;
 
     public LauncherGUI() {
         fileChecker = new FileChecker(syncCheckProgress);
+        syncer = new Syncer(this);
 
         RepositoryManger.getInstance().addObserver(this);
         SteamTimer.addObserver(this);
         fileChecker.addObserver(this);
+        syncer.addObserver(this);
 
         updateTreePanel.remove(tree1);
 
         repoTree = new JCheckBoxTree();
         updateTreePanel.add(repoTree, BorderLayout.CENTER);
+
+        DefaultTreeModel model = (DefaultTreeModel) repoTree.getModel();
+        model.setRoot(new RepositoryTreeNode("Repository"));
 
         updateTreePanel.revalidate();
         updateTreePanel.repaint();
@@ -221,7 +225,6 @@ public class LauncherGUI implements Observer {
                 if (!e.getValueIsAdjusting()) {
                     PresetTableModel m = (PresetTableModel) presetList.getModel();
                     Modset modset = (Modset) m.getElementAt(presetList.getSelectedIndex());
-                    System.out.println(modset.getName());
 
                     if (modset.getType() == Modset.Type.SERVER) {
                         renamePresetButton.setEnabled(false);
@@ -283,6 +286,11 @@ public class LauncherGUI implements Observer {
 
         new Thread(() -> {
             RepositoryManger.getInstance().refreshMeta();
+            try {
+                Thread.sleep(750);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             RepositoryManger.getInstance().refreshModset();
         }).start();
 
@@ -294,7 +302,8 @@ public class LauncherGUI implements Observer {
                 syncCheckStatusLabel.setText("Running!");
                 new Thread(() -> fileChecker.check()).start();
 
-                // TODO: disable JTree Checkboxes
+                repoTree.setCheckboxesEnabled(false);
+                repoTree.setCheckboxesChecked(false);
             }
         });
 
@@ -302,6 +311,28 @@ public class LauncherGUI implements Observer {
             @Override
             public void actionPerformed(ActionEvent e) {
                 fileChecker.stop();
+            }
+        });
+
+        syncDownloadButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Thread(() -> syncer.sync(lastSynclist.clone())).start();
+            }
+        });
+
+        syncDownloadAbortButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                syncer.stop();
+            }
+        });
+
+        syncPauseButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                syncer.setPaused(!syncer.isPaused());
+                syncPauseButton.setEnabled(false);
             }
         });
     }
@@ -440,7 +471,7 @@ public class LauncherGUI implements Observer {
                 }
 
                 String modPath = ArmA3Launcher.user_config.get("client", "modPath");
-                if(sPath.equalsIgnoreCase(modPath)) {
+                if (sPath.equalsIgnoreCase(modPath)) {
                     SwingUtilities.invokeLater(() -> errorBox(LangUtils.getInstance().getString("same_mod_arma_dir_msg"), LangUtils.getInstance().getString("same_mod_arma_dir")));
                     return false;
                 }
@@ -457,7 +488,7 @@ public class LauncherGUI implements Observer {
                 String sPath = path.getAbsolutePath();
 
                 String armaPath = ArmA3Launcher.user_config.get("client", "armaPath");
-                if(sPath.equalsIgnoreCase(armaPath)) {
+                if (sPath.equalsIgnoreCase(armaPath)) {
                     SwingUtilities.invokeLater(() -> errorBox(LangUtils.getInstance().getString("same_mod_arma_dir_msg"), LangUtils.getInstance().getString("same_mod_arma_dir")));
                     return false;
                 }
@@ -550,78 +581,54 @@ public class LauncherGUI implements Observer {
         spinner.addChangeListener(new SettingsHandler.SpinnerListener(paraObj));
     }
 
-    public ArrayList<AbstractMod> getSyncList() {
-        ArrayList<AbstractMod> modList = new ArrayList<>();
+    public SyncList getSyncList() {
+        SyncList synclist = new SyncList();
 
-        HashMap<String, ArrayList<String>> tempMap = new HashMap<>();
-        for (TreePath checkedPath : repoTree.getCheckedPaths()) {
-            DefaultMutableTreeNode tn = (DefaultMutableTreeNode)checkedPath.getLastPathComponent();
+        DefaultTreeModel model = (DefaultTreeModel) repoTree.getModel();
+        RepositoryTreeNode root = (RepositoryTreeNode) model.getRoot();
+        for (TreeNode leaf : root.getAllLeafNodes()) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) leaf;
+            TreeNode[] path = node.getPath();
+            boolean isSelected = repoTree.isSelected(new TreePath(path));
+            if (!isSelected) continue;
 
-            if(tn.getChildCount() > 0) continue;
-            Object[] path = checkedPath.getPath();
-            DefaultMutableTreeNode[] modifiedArray = Arrays.stream(Arrays.copyOfRange(path, 1, path.length)).toArray(DefaultMutableTreeNode[]::new);
-
-            ArrayList<String> strings = new ArrayList<>();
-            if(tempMap.containsKey(String.valueOf(modifiedArray[0].getUserObject()))) {
-                strings = tempMap.get(String.valueOf(modifiedArray[0].getUserObject()));
+            ArrayList<String> treePathList = new ArrayList<>();
+            for (int i = 2; i < path.length; i++) {
+                treePathList.add(String.valueOf(((DefaultMutableTreeNode) path[i]).getUserObject()));
             }
+            String treePath = String.join("/", treePathList);
+            String modname = String.valueOf(((DefaultMutableTreeNode) path[1]).getUserObject());
 
-            String modPath = "";
-            for (int i = 1; i < modifiedArray.length; i++) {
-                modPath += String.valueOf(modifiedArray[i].getUserObject()) + "/";
-            }
-            modPath = modPath.isEmpty() ? "" : modPath.substring(0, modPath.length() - 1);
-            strings.add(modPath);
-
-            tempMap.put((String) modifiedArray[0].getUserObject(), strings);
-        }
-
-        for (Map.Entry<String, ArrayList<String>> entry : tempMap.entrySet()) {
-            String modS = entry.getKey();
-            ArrayList<String> modlistS = entry.getValue();
-
-            if(modlistS.isEmpty()) {
-                for (AbstractMod abstractMod : RepositoryManger.MOD_LIST) {
-                    if (abstractMod.getName().equals(modS)) {
-                        modList.add(abstractMod);
+            if (fileChecker.getChanged().containsKey(modname)) {
+                for (ModFile modFile : fileChecker.getChanged().get(modname)) {
+                    if (String.join("/", modFile.getPath()).equals(treePath)) {
+                        synclist.add(modFile);
                         break;
                     }
                 }
-            } else {
-                for (AbstractMod abstractMod : RepositoryManger.MOD_LIST) {
-                    if (abstractMod.getName().equals(modS)) {
-                        if(!(abstractMod instanceof Mod)) continue;
-                        Mod m = ((Mod) abstractMod).clone();
+            }
 
-                        for (int i = 0; i < m.getFiles().size(); i++) {
-                            boolean found = false;
-                            for (String pathS : modlistS) {
-                                if(m.getFiles().get(i).getModfileString().equals(pathS)) {
-                                    found = true;
-                                }
-                            }
-
-                            if(!found) {
-                                m.getFiles().remove(i);
-                            }
-                        }
-
-                        modList.add(m);
+            if (fileChecker.getAdded().containsKey(modname)) {
+                for (ModFile modFile : fileChecker.getAdded().get(modname)) {
+                    if (String.join("/", modFile.getPath()).equals(treePath)) {
+                        synclist.add(modFile);
+                        break;
                     }
                 }
             }
         }
+        synclist.setDeleted(fileChecker.getDeleted());
 
-        return modList;
+        return synclist;
     }
 
     public void updateModList(Modset modset) {
         ListModel<String> model = (ListModel) modList.getModel();
         // TODO: Show All Mods (keyname)
-        // TODO: Show not installed Mods with red font
-        // TODO: Select Mod if in modset.Mods
-        // TODO: Custom Checkbox Render
-        // TODO: Wenn modset.type == Server alle Checkboxen deaktivieren!
+        //  Show not installed Mods with red font
+        //  Select Mod if in modset.Mods
+        //  Custom Checkbox Render
+        //  Wenn modset.type == Server alle Checkboxen deaktivieren!
     }
 
     public void updateRepoTree() {
@@ -629,28 +636,26 @@ public class LauncherGUI implements Observer {
         collapseAllButton.setEnabled(false);
 
         DefaultTreeModel model = (DefaultTreeModel) repoTree.getModel();
-        DefaultMutableTreeNode root = (DefaultMutableTreeNode) model.getRoot();
-        root.setUserObject("Repository");
+        RepositoryTreeNode root = (RepositoryTreeNode) model.getRoot();
         root.removeAllChildren();
 
         for (AbstractMod abstractMod : RepositoryManger.MOD_LIST) {
             if (abstractMod instanceof Mod) {
                 // Whole Folder
-                // TODO: Recursives Ordner Parsen und einzelne Treenodes erstellen
                 Mod m = (Mod) abstractMod;
-                DefaultMutableTreeNode modFolder = new DefaultMutableTreeNode(m.getName(), true);
+                RepositoryTreeNode modFolder = new RepositoryTreeNode(m.getName(), true);
                 model.insertNodeInto(modFolder, root, root.getChildCount());
 
                 for (ModFile modfile : m.getFiles()) {
 
-                    DefaultMutableTreeNode lastNode = modFolder;
+                    RepositoryTreeNode lastNode = modFolder;
                     ArrayList<String> path = modfile.getPath();
 
-                    for (int i = 0; i < path.size(); i++) {
+                    for (int i = 0; i < path.size() -1; i++) {
                         boolean found = false;
 
                         for (int j = 0; j < lastNode.getChildCount(); j++) {
-                            DefaultMutableTreeNode temp = (DefaultMutableTreeNode) lastNode.getChildAt(j);
+                            RepositoryTreeNode temp = (RepositoryTreeNode) lastNode.getChildAt(j);
                             if (temp.getUserObject().equals(path.get(i))) {
                                 found = true;
                                 lastNode = temp;
@@ -659,26 +664,25 @@ public class LauncherGUI implements Observer {
                         }
 
                         if (!found) {
-                            DefaultMutableTreeNode temp = new DefaultMutableTreeNode(path.get(i));
+                            RepositoryTreeNode temp = new RepositoryTreeNode(path.get(i));
                             model.insertNodeInto(temp, lastNode, lastNode.getChildCount());
                             lastNode = temp;
                         }
                     }
-
-                    model.insertNodeInto(new DefaultMutableTreeNode(modfile.getName()), lastNode, lastNode.getChildCount());
+                    model.insertNodeInto(new RepositoryTreeNode(modfile.getName(), getNodeColor(m.getName(), modfile)), lastNode, lastNode.getChildCount());
                 }
                 sort(modFolder);
             } else if (abstractMod instanceof ModFile) {
                 // Just a Single FIle
                 ModFile m = (ModFile) abstractMod;
-                model.insertNodeInto(new DefaultMutableTreeNode(m.getName(), false), root, root.getChildCount());
+                model.insertNodeInto(new RepositoryTreeNode(m.getName(), getNodeColor(m.getName(), m), false), root, root.getChildCount());
             }
         }
 
         sort(root);
+        setParentColor(root);
 
         repoTree.clearCheckChangeEventListeners();
-
         repoTree.resetCheckingState();
 
         SwingUtilities.invokeLater(() -> {
@@ -690,38 +694,90 @@ public class LauncherGUI implements Observer {
             updateTreePanel.repaint();
         });
 
+        repoTree.addCheckChangeEventListener(new JCheckBoxTree.CheckChangeEventListener() {
+            @Override
+            public void checkStateChanged(JCheckBoxTree.CheckChangeEvent event) {
+                lastSynclist = getSyncList();
+                if (lastSynclist.getSize() != 0)
+                    syncSizeLabel.setText(Humanize.binaryPrefix(lastSynclist.getSize()));
+                else syncSizeLabel.setText("0.0 B");
+                if (lastSynclist.getCount() != 0) {
+                    syncDownloadButton.setEnabled(true);
+                    syncFileCountLabel.setText("" + lastSynclist.getCount());
+                } else {
+                    syncDownloadButton.setEnabled(false);
+                    syncFileCountLabel.setText("");
+                }
+            }
+        });
+
         expandAllButton.setEnabled(true);
         collapseAllButton.setEnabled(true);
     }
 
-    public DefaultMutableTreeNode sort(DefaultMutableTreeNode node) {
+    public Color getNodeColor(String mod, ModFile mf) {
+        if (fileChecker.getAdded().containsKey(mod)) {
+            ArrayList<ModFile> mfList = fileChecker.getAdded().get(mod);
+            for (ModFile modFile : mfList) {
+                if (modFile.getLocaleFile().getPath().equals(mf.getLocaleFile().getPath())) return Color.RED;
+            }
+        }
+
+        if (fileChecker.getChanged().containsKey(mod)) {
+            ArrayList<ModFile> mfList = fileChecker.getChanged().get(mod);
+            for (ModFile modFile : mfList) {
+                if (modFile.getLocaleFile().getPath().equals(mf.getLocaleFile().getPath())) return Color.ORANGE;
+            }
+        }
+
+        return null;
+    }
+
+    public void setParentColor(RepositoryTreeNode node) {
+        for (TreeNode leaf : node.getAllLeafNodes()) {
+            if (!(leaf instanceof RepositoryTreeNode)) continue;
+            RepositoryTreeNode mLeaf = (RepositoryTreeNode) leaf;
+            TreeNode[] path = mLeaf.getPath();
+
+            if (mLeaf.getLabelColor() == null) continue;
+            for (int i = 0; i < path.length - 1; i++) {
+                if (!(path[i] instanceof RepositoryTreeNode)) continue;
+                RepositoryTreeNode parent = (RepositoryTreeNode) path[i];
+                if (parent.getLabelColor() == mLeaf.getLabelColor()) continue;
+                if (parent.getLabelColor() == Color.RED) continue;
+                parent.setLabelColor(mLeaf.getLabelColor());
+            }
+        }
+    }
+
+    public RepositoryTreeNode sort(RepositoryTreeNode node) {
 
         //sort alphabetically
-        for(int i = 0; i < node.getChildCount() - 1; i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+        for (int i = 0; i < node.getChildCount() - 1; i++) {
+            RepositoryTreeNode child = (RepositoryTreeNode) node.getChildAt(i);
             String nt = child.getUserObject().toString();
 
-            for(int j = i + 1; j <= node.getChildCount() - 1; j++) {
-                DefaultMutableTreeNode prevNode = (DefaultMutableTreeNode) node.getChildAt(j);
+            for (int j = i + 1; j <= node.getChildCount() - 1; j++) {
+                RepositoryTreeNode prevNode = (RepositoryTreeNode) node.getChildAt(j);
                 String np = prevNode.getUserObject().toString();
 
-                if(nt.compareToIgnoreCase(np) > 0) {
+                if (nt.compareToIgnoreCase(np) > 0) {
                     node.insert(child, j);
                     node.insert(prevNode, i);
                 }
             }
-            if(child.getChildCount() > 0) {
+            if (child.getChildCount() > 0) {
                 sort(child);
             }
         }
 
         //put folders first - normal on Windows and some flavors of Linux but not on Mac OS X.
-        for(int i = 0; i < node.getChildCount() - 1; i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            for(int j = i + 1; j <= node.getChildCount() - 1; j++) {
-                DefaultMutableTreeNode prevNode = (DefaultMutableTreeNode) node.getChildAt(j);
+        for (int i = 0; i < node.getChildCount() - 1; i++) {
+            RepositoryTreeNode child = (RepositoryTreeNode) node.getChildAt(i);
+            for (int j = i + 1; j <= node.getChildCount() - 1; j++) {
+                RepositoryTreeNode prevNode = (RepositoryTreeNode) node.getChildAt(j);
 
-                if(!prevNode.isLeaf() && child.isLeaf()) {
+                if (!prevNode.isLeaf() && child.isLeaf()) {
                     node.insert(child, j);
                     node.insert(prevNode, i);
                 }
@@ -778,30 +834,55 @@ public class LauncherGUI implements Observer {
                     refreshRepoButton.setEnabled(false);
                     break;
             }
-        } else if(s.equals("fileChecker")) {
+        } else if (s.equals("fileChecker")) {
             syncCheckButton.setEnabled(true);
             syncCheckAbortButton.setEnabled(false);
             syncCheckStatusLabel.setText("Finished!");
             updateRepoTree();
-            // TODO: Label einfärben
-            // TODO: Enable Tree Checkboxes
+
+            repoTree.setCheckboxesEnabled(true);
             syncDownloadButton.setEnabled(true);
             syncAddedFilesLabel.setText(String.valueOf(fileChecker.getAddedCount()));
             syncChangedFilesLabel.setText(String.valueOf(fileChecker.getChangedCount()));
             syncDeletedFilesLabel.setText(String.valueOf(fileChecker.getDeletedCount()));
 
-            syncSizeLabel.setText(String.valueOf(fileChecker.getSize())); // TODO: Make Humanreadable
+            syncDownloadAbortButton.setEnabled(false);
+            syncDownloadButton.setEnabled(true);
+            syncPauseButton.setEnabled(false);
+
+            syncChangedFileSizeLabel.setText(Humanize.binaryPrefix(fileChecker.getSize()));
         } else if (s.equals("fileCheckerStopped")) {
             syncCheckButton.setEnabled(true);
             syncCheckAbortButton.setEnabled(false);
             syncCheckProgress.setValue(0);
             syncCheckStatusLabel.setText("Failed!");
+            repoTree.setCheckboxesEnabled(false);
+
+            syncDownloadAbortButton.setEnabled(false);
+            syncDownloadButton.setEnabled(false);
+            syncPauseButton.setEnabled(false);
+
+            repoTree.setCheckboxesChecked(false);
 
             syncAddedFilesLabel.setText("" + 0);
             syncChangedFilesLabel.setText("" + 0);
             syncDeletedFilesLabel.setText("" + 0);
 
-            syncSizeLabel.setText("0.0 B");
+            syncChangedFileSizeLabel.setText("0.0 B");
+        } else if (s.equals("syncStopped")) {
+            new Thread(() -> fileChecker.check()).start();
+        } else if (s.equals("syncComplete")) {
+            new Thread(() -> fileChecker.check()).start();
+        } else if (s.equals("syncContinue")) {
+            syncDownloadAbortButton.setEnabled(true);
+            syncPauseButton.setEnabled(true);
+            syncPauseButton.setText(LangUtils.getInstance().getString("pause"));
+            syncDownloadButton.setEnabled(false);
+        } else if (s.equals("syncPaused")) {
+            syncDownloadAbortButton.setEnabled(true);
+            syncPauseButton.setEnabled(true);
+            syncPauseButton.setText(LangUtils.getInstance().getString("resume"));
+            syncDownloadButton.setEnabled(false);
         }
     }
 }

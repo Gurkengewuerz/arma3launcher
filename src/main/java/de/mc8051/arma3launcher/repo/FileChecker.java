@@ -30,10 +30,10 @@ public class FileChecker implements Observable {
     private JProgressBar pb;
     private boolean stop = false;
 
-    ArrayList<Path> deleted = new ArrayList<>();
-    HashMap<String, ArrayList<ModFile>> changed = new HashMap<>();
+    private ArrayList<Path> deleted = new ArrayList<>();
+    private HashMap<String, ArrayList<ModFile>> changed = new HashMap<>();
     int changedCount = 0;
-    HashMap<String, ArrayList<ModFile>> added = new HashMap<>();
+    private HashMap<String, ArrayList<ModFile>> added = new HashMap<>();
     int addedCount = 0;
 
     long size = 0;
@@ -66,7 +66,8 @@ public class FileChecker implements Observable {
                 Mod m = (Mod) abstractMod;
 
                 for (ModFile mf : m.getFiles()) {
-                    checkFile(mf.getName(), mf);
+                    checkFile(m.getName(), mf);
+
                     i++;
                     int finalI = i;
                     SwingUtilities.invokeLater(() -> {
@@ -99,16 +100,21 @@ public class FileChecker implements Observable {
     }
 
     private void checkFile(String mod, ModFile mf) {
-        // TODO: Add mf to Array if Array already exists
+        ArrayList<ModFile> temp = new ArrayList<>();
+
         if(!mf.exists()) {
-            added.put(mod, mf);
+            if(added.containsKey(mod)) temp =added.get(mod);
+            temp.add(mf);
+            added.put(mod, temp);
             addedCount++;
             size += mf.getSize();
             return;
         }
 
-        if(mf.getLocalSize() != mf.getSize()) {
-            changed.put(mod, mf);
+        if(mf.getLocalSize() != mf.getSize() || !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum())) {
+            if(changed.containsKey(mod)) temp =changed.get(mod);
+            temp.add(mf);
+            changed.put(mod, temp);
             changedCount++;
             size += mf.getSize();
             return;

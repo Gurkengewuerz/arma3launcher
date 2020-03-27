@@ -3,7 +3,7 @@
   <grid id="27dc6" binding="mainPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
     <margin top="0" left="0" bottom="0" right="0"/>
     <constraints>
-      <xy x="20" y="20" width="1048" height="526"/>
+      <xy x="20" y="20" width="1048" height="556"/>
     </constraints>
     <properties/>
     <border type="none"/>
@@ -407,7 +407,7 @@
                                   </component>
                                 </children>
                               </grid>
-                              <grid id="3b45c" layout-manager="GridLayoutManager" row-count="6" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                              <grid id="3b45c" layout-manager="GridLayoutManager" row-count="6" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                 <margin top="0" left="3" bottom="0" right="0"/>
                                 <constraints border-constraint="Center"/>
                                 <properties/>
@@ -423,7 +423,7 @@
                                   </component>
                                   <hspacer id="f47e0">
                                     <constraints>
-                                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                      <grid row="0" column="2" row-span="1" col-span="2" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                   </hspacer>
                                   <component id="7b453" class="javax.swing.JLabel" binding="syncCheckStatusLabel">
@@ -437,7 +437,7 @@
                                   </component>
                                   <component id="c7b6" class="javax.swing.JProgressBar" binding="syncCheckProgress">
                                     <constraints>
-                                      <grid row="1" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                      <grid row="1" column="0" row-span="1" col-span="4" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties>
                                       <string value=""/>
@@ -448,7 +448,7 @@
                                   <grid id="c1d6e" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                     <margin top="0" left="0" bottom="0" right="0"/>
                                     <constraints>
-                                      <grid row="2" column="0" row-span="1" col-span="3" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                      <grid row="2" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties/>
                                     <border type="none"/>
@@ -526,6 +526,23 @@
                                       <text value="0"/>
                                     </properties>
                                   </component>
+                                  <component id="4c8b" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="3" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text resource-bundle="lang" key="changed_filesize"/>
+                                    </properties>
+                                  </component>
+                                  <component id="585a0" class="javax.swing.JLabel" binding="syncChangedFileSizeLabel">
+                                    <constraints>
+                                      <grid row="3" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="0.0 B"/>
+                                      <toolTipText resource-bundle="lang" key="changed_filesize_tooltip"/>
+                                    </properties>
+                                  </component>
                                 </children>
                               </grid>
                             </children>
@@ -573,22 +590,9 @@
                                   <text resource-bundle="lang" key="total_file_size"/>
                                 </properties>
                               </component>
-                              <vspacer id="54eb4">
-                                <constraints>
-                                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                              </vspacer>
-                              <component id="d85a8" class="javax.swing.JLabel">
-                                <constraints>
-                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                                <properties>
-                                  <text resource-bundle="lang" key="downloaded"/>
-                                </properties>
-                              </component>
                               <component id="f5997" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <text resource-bundle="lang" key="speed"/>
@@ -596,7 +600,7 @@
                               </component>
                               <component id="25551" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <text resource-bundle="lang" key="remaining_time"/>
@@ -610,17 +614,9 @@
                                   <text value="0.0 B"/>
                                 </properties>
                               </component>
-                              <component id="d9013" class="javax.swing.JLabel">
+                              <component id="617c7" class="javax.swing.JLabel" binding="syncDownloadSpeedLabel">
                                 <constraints>
-                                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                                <properties>
-                                  <text value=""/>
-                                </properties>
-                              </component>
-                              <component id="617c7" class="javax.swing.JLabel">
-                                <constraints>
-                                  <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <text value=""/>
@@ -628,7 +624,39 @@
                               </component>
                               <component id="b64ac" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="4" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value=""/>
+                                </properties>
+                              </component>
+                              <component id="d85a8" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text resource-bundle="lang" key="downloaded"/>
+                                </properties>
+                              </component>
+                              <component id="d9013" class="javax.swing.JLabel" binding="syncDownloadedLabel">
+                                <constraints>
+                                  <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value=""/>
+                                </properties>
+                              </component>
+                              <component id="28be3" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text resource-bundle="lang" key="file_count"/>
+                                </properties>
+                              </component>
+                              <component id="9148" class="javax.swing.JLabel" binding="syncFileCountLabel">
+                                <constraints>
+                                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <text value=""/>
@@ -671,24 +699,24 @@
                             <properties/>
                             <border type="none"/>
                             <children>
-                              <component id="f39cc" class="javax.swing.JProgressBar" binding="progressBar2" default-binding="true">
+                              <component id="f39cc" class="javax.swing.JProgressBar" binding="syncDownloadProgress">
                                 <constraints>
                                   <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <string value=""/>
                                   <stringPainted value="true"/>
-                                  <value value="50"/>
+                                  <value value="0"/>
                                 </properties>
                               </component>
-                              <component id="87392" class="javax.swing.JProgressBar" binding="progressBar3" default-binding="true">
+                              <component id="87392" class="javax.swing.JProgressBar" binding="syncFileProgress">
                                 <constraints>
                                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <string value=""/>
                                   <stringPainted value="true"/>
-                                  <value value="50"/>
+                                  <value value="0"/>
                                 </properties>
                               </component>
                               <grid id="99173" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
