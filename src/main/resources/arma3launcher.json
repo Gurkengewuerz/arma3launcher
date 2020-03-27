@@ -1,5 +1,4 @@
 {
-  "version": "0.1.1",
   "name": "TheTown Client",
   "title": "Welcome! :P",
   "subtitle": "${name} v${version}",

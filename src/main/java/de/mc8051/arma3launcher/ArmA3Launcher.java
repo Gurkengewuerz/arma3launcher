@@ -13,6 +13,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,7 +36,11 @@ public class ArmA3Launcher {
         config = ConfigFactory.load("arma3launcher");
 
         CLIENT_NAME = config.getString("name");
-        VERSION = config.getString("version");
+
+        final Properties properties = new Properties();
+        properties.load(ArmA3Launcher.class.getClassLoader().getResourceAsStream("project.properties"));
+
+        VERSION = properties.getProperty("version");
 
         APPLICATION_PATH = getAppData() + CLIENT_NAME;
 

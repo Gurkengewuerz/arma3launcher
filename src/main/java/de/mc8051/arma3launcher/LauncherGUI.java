@@ -18,8 +18,8 @@ import de.mc8051.arma3launcher.repo.SyncList;
 import de.mc8051.arma3launcher.repo.Syncer;
 import de.mc8051.arma3launcher.steam.SteamTimer;
 import de.mc8051.arma3launcher.utils.Callback;
+import de.mc8051.arma3launcher.utils.Humanize;
 import de.mc8051.arma3launcher.utils.LangUtils;
-import humanize.Humanize;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -134,6 +134,7 @@ public class LauncherGUI implements Observer {
     private JLabel syncFileCountLabel;
     public JLabel syncDownloadedLabel;
     public JLabel syncDownloadSpeedLabel;
+    private JSplitPane splitView;
 
     private JCheckBoxTree repoTree;
     private FileChecker fileChecker;
@@ -317,6 +318,7 @@ public class LauncherGUI implements Observer {
         syncDownloadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if(lastSynclist == null) return;
                 new Thread(() -> syncer.sync(lastSynclist.clone())).start();
             }
         });
@@ -365,6 +367,7 @@ public class LauncherGUI implements Observer {
             armaStatus.setText(LangUtils.getInstance().getString("closed"));
             armaStatus.setForeground(Color.red);
         }
+        splitView.setDividerLocation(-1);
     }
 
     public void techCheck() {
@@ -629,6 +632,7 @@ public class LauncherGUI implements Observer {
         //  Select Mod if in modset.Mods
         //  Custom Checkbox Render
         //  Wenn modset.type == Server alle Checkboxen deaktivieren!
+        //  Show hint that server modsets cant be edited
     }
 
     public void updateRepoTree() {

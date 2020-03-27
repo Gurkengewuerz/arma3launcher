@@ -9,7 +9,7 @@ import de.mc8051.arma3launcher.interfaces.Observable;
 import de.mc8051.arma3launcher.interfaces.Observer;
 import de.mc8051.arma3launcher.objects.AbstractMod;
 import de.mc8051.arma3launcher.objects.ModFile;
-import humanize.Humanize;
+import de.mc8051.arma3launcher.utils.Humanize;
 
 import javax.swing.*;
 import java.io.IOException;

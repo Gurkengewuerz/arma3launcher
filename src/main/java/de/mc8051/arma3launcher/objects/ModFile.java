@@ -1,15 +1,15 @@
 package de.mc8051.arma3launcher.objects;
 
 import de.mc8051.arma3launcher.ArmA3Launcher;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.FilenameUtils;
+import de.mc8051.arma3launcher.utils.FileUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.logging.Level;
@@ -24,7 +24,6 @@ public class ModFile implements AbstractMod {
     private long size;
     private String folder;
     private String filename;
-    private String extension;
     private String modfileString;
     private String sha1sum;
     private String parent;
@@ -36,9 +35,7 @@ public class ModFile implements AbstractMod {
         // size: size as in metafile on server
         this.f = f;
         this.size = size;
-        this.folder = FilenameUtils.getPath(modfile);
-        this.filename = FilenameUtils.getBaseName(modfile);
-        this.extension = FilenameUtils.getExtension(modfile);
+        this.filename = Paths.get(f.getPath()).getFileName().toString();
         this.modfileString = modfile;
         this.sha1sum = sha1sum.toLowerCase();
         this.parent = parent;
@@ -50,18 +47,6 @@ public class ModFile implements AbstractMod {
 
     public long getSize() {
         return size;
-    }
-
-    public String getReletaivePath() {
-        return folder;
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public String getExtension() {
-        return extension;
     }
 
     public ArrayList<String> getPath() {
@@ -87,7 +72,7 @@ public class ModFile implements AbstractMod {
     }
 
     public String getName() {
-        return filename + (extension.equals("") ? "" : "." + extension);
+        return filename;
     }
 
     public String getModfileString() {
@@ -105,9 +90,9 @@ public class ModFile implements AbstractMod {
     public String getLocalGeneratedSHA1Sum() {
         try {
             if (localGeneratedSHA1sum.isEmpty() && exists()) {
-                localGeneratedSHA1sum = DigestUtils.sha1Hex(new FileInputStream(f.getAbsolutePath())).toLowerCase();
+                localGeneratedSHA1sum = FileUtils.sha1Hex(f);
             }
-        } catch (IOException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
         }
         return localGeneratedSHA1sum;

@@ -1,6 +1,6 @@
 package de.mc8051.arma3launcher.utils;
 
-import okhttp3.Response;
+import de.mc8051.arma3launcher.repo.Response;
 
 import java.io.File;
 

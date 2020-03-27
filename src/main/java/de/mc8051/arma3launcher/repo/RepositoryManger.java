@@ -9,20 +9,25 @@ import de.mc8051.arma3launcher.objects.ModFile;
 import de.mc8051.arma3launcher.objects.Modset;
 import de.mc8051.arma3launcher.objects.Server;
 import de.mc8051.arma3launcher.utils.Callback;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 /**
  * Created by gurkengewuerz.de on 24.03.2020.
@@ -36,28 +41,37 @@ public class RepositoryManger implements Observable {
     private static HashMap<Type, DownloadStatus> statusMap = new HashMap<>();
 
     private List<Observer> observerList = new ArrayList<>();
-    private OkHttpClient client = new OkHttpClient();
 
     private RepositoryManger() {
         statusMap.put(Type.METADATA, DownloadStatus.FINNISHED);
         statusMap.put(Type.MODSET, DownloadStatus.FINNISHED);
     }
 
-    private void getAsync(String url, Callback.HttpCallback callback) {
+    private void getAsync(String urlS, Callback.HttpCallback callback) {
         new Thread(() -> {
             try {
-                Request request = new Request.Builder()
-                        .url(url)
+                URI url = new URI(urlS);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(url)
+                        .GET()
+                        .headers("Content-Type", "text/plain;charset=UTF-8")
+                        .timeout(Duration.of(3, SECONDS))
                         .build();
 
-                Response r = client.newCall(request).execute();
+                HttpResponse<String> response = HttpClient.newBuilder()
+                        .followRedirects(HttpClient.Redirect.ALWAYS)
+                        .build().send(request, HttpResponse.BodyHandlers.ofString());
+
+                Response r = new Response(response);
+
                 if (!r.isSuccessful()) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Cant open " + r.request().url().toString() + " code " + r.code());
+                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Cant open " + r.request().uri() + " code " + r.getStatusCode());
                     return;
                 }
 
                 callback.response(r);
-            } catch (IOException e) {
+            } catch (IOException | URISyntaxException | InterruptedException e) {
                 Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
                 callback.response(null);
             }
@@ -77,7 +91,7 @@ public class RepositoryManger implements Observable {
                 }
 
                 try {
-                    JSONObject jsonObject = new JSONObject(r.body().string());
+                    JSONObject jsonObject = new JSONObject(r.getBody());
 
                     if (jsonObject.has("modsets")) {
                         Modset.MODSET_LIST.clear();
@@ -104,7 +118,7 @@ public class RepositoryManger implements Observable {
 
                     statusMap.replace(Type.METADATA, DownloadStatus.FINNISHED);
                     RepositoryManger.getInstance().notifyObservers(Type.METADATA.toString());
-                } catch (IOException | NullPointerException e) {
+                } catch (NullPointerException e) {
                     Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
                 }
             }
@@ -126,7 +140,7 @@ public class RepositoryManger implements Observable {
                 try {
                     RepositoryManger.MOD_LIST.clear();
                     RepositoryManger.MOD_LIST_SIZE = 0;
-                    JSONObject jsonObject = new JSONObject(r.body().string());
+                    JSONObject jsonObject = new JSONObject(r.getBody());
 
                     String modPath = ArmA3Launcher.user_config.get("client", "modPath");
                     if(modPath == null) modPath = "";
@@ -170,7 +184,7 @@ public class RepositoryManger implements Observable {
 
                     statusMap.replace(Type.MODSET, DownloadStatus.FINNISHED);
                     RepositoryManger.getInstance().notifyObservers(Type.MODSET.toString());
-                } catch (IOException | NullPointerException e) {
+                } catch (NullPointerException e) {
                     Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
                 }
             }
