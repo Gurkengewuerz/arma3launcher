@@ -30,6 +30,8 @@ public class FileChecker implements Observable {
     private JProgressBar pb;
     private boolean stop = false;
 
+    private boolean checked = false;
+
     private ArrayList<Path> deleted = new ArrayList<>();
     private HashMap<String, ArrayList<ModFile>> changed = new HashMap<>();
     int changedCount = 0;
@@ -93,6 +95,11 @@ public class FileChecker implements Observable {
 
         checkDeleted();
         notifyObservers("fileChecker");
+        checked = true;
+    }
+
+    public boolean isChecked() {
+        return checked;
     }
 
     public void stop() {

@@ -1,9 +1,34 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2020-2020 Niklas Schütrumpf (Gurkengewuerz)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package de.mc8051.arma3launcher;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.mc8051.arma3launcher.steam.SteamTimer;
+import de.mc8051.arma3launcher.utils.TaskBarUtils;
 import org.ini4j.Ini;
 
 import javax.swing.*;
@@ -28,6 +53,7 @@ public class ArmA3Launcher {
     public static String VERSION;
     public static String CLIENT_NAME;
     public static String APPLICATION_PATH;
+    public static String USER_AGENT;
 
     public static Config config;
     public static Ini user_config;
@@ -39,10 +65,11 @@ public class ArmA3Launcher {
 
         final Properties properties = new Properties();
         properties.load(ArmA3Launcher.class.getClassLoader().getResourceAsStream("project.properties"));
-
         VERSION = properties.getProperty("version");
 
         APPLICATION_PATH = getAppData() + CLIENT_NAME;
+
+        USER_AGENT = config.getString("sync.useragent") + "/" + VERSION;
 
         if (new File(APPLICATION_PATH).mkdirs()) {
             Logger.getLogger(ArmA3Launcher.class.getName()).log(Level.SEVERE, "Can not create " + APPLICATION_PATH);
@@ -66,6 +93,8 @@ public class ArmA3Launcher {
         UIManager.setLookAndFeel(new FlatDarkLaf());
 
         JFrame frame = new JFrame(CLIENT_NAME);
+        TaskBarUtils.getInstance().setWindow(frame);
+
         LauncherGUI gui = new LauncherGUI();
         frame.setContentPane(gui.mainPanel);
 
@@ -74,14 +103,18 @@ public class ArmA3Launcher {
             public void windowClosing(WindowEvent e) {
                 steamTimer.cancel();
                 steamTimer.purge();
+                TaskBarUtils.getInstance().removeTrayIcon();
+                gui.exit();
                 frame.dispose();
             }
         });
 
-        frame.setMinimumSize(new Dimension(1000, 500));
+        frame.setMinimumSize(new Dimension(1000, 550));
 
         frame.pack();
+        frame.setIconImage(TaskBarUtils.IMAGE_ICON);
         frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         steamTimer.scheduleAtFixedRate(
                 new SteamTimer(),

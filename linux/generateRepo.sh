@@ -92,15 +92,29 @@ while IFS= read -r folder; do
         FILEFOLDER=$(find "${folder}" -type f ! -path "*.zsync" | sed 's|^./||')
         while IFS= read -r folderfile; do
             filebyte=$(wc -c < "${folderfile}")
+
+            if [ $filebyte -eq 0  ]; then
+              echo "Skipping \"${folderfile}\" because file is empty"
+              continue
+            fi
+
             foldersize=$(expr $foldersize + $filebyte)
             name=$(echo "${folderfile}" | cut -d"/" -f2-)
             x="\"${name}\":{\"size\": ${filebyte}, \"sha1\": \"${SHASUMS[$folderfile]}\"},${x}"
         done <<< "$FILEFOLDER"
         x=$(echo ${x} | rev | cut -c2- | rev)
+
+        if [ $foldersize -eq 0  ]; then
+            echo "Skipping complete folder \"${$folder}\" because all files are empty"
+          continue
+        fi
         JSONDATA+=( "\"${folder}\": {\"size\":${foldersize},\"content\":{${x}}}" )
     else
         echo "is file"
         filebyte=$(wc -c < "${folder}")
+        if [ $filebyte -eq 0  ]; then
+         continue
+        fi
         JSONDATA+=( "\"${folder}\": {\"size\":${filebyte}, \"sha1\": \"${SHASUMS[$folder]}\"}" )
     fi
 done <<< "$FILELIST"

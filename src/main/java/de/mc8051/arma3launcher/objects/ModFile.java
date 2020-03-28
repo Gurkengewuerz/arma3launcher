@@ -79,6 +79,10 @@ public class ModFile implements AbstractMod {
         return modfileString;
     }
 
+    public String getModPath() {
+        return (parent == null ? "" : parent + "/") + modfileString;
+    }
+
     public File getLocaleFile() {
         return f;
     }

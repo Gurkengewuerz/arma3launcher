@@ -3,7 +3,12 @@
   "title": "Welcome! :P",
   "subtitle": "${name} v${version}",
   "sync": {
+    "useragent": "TheTownSyncer",
     "url": "http://46.4.195.36"
+  },
+  "social": {
+    "twitter": "https://twitter.com/TheTownServer",
+    "github": "https://github.com/Gurkengewuerz/arma3launcher"
   },
   "client": {
     "armaPath": "",

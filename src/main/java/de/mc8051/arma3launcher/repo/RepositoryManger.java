@@ -4,6 +4,7 @@ import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.interfaces.Observable;
 import de.mc8051.arma3launcher.interfaces.Observer;
 import de.mc8051.arma3launcher.objects.AbstractMod;
+import de.mc8051.arma3launcher.objects.Changelog;
 import de.mc8051.arma3launcher.objects.Mod;
 import de.mc8051.arma3launcher.objects.ModFile;
 import de.mc8051.arma3launcher.objects.Modset;
@@ -45,6 +46,7 @@ public class RepositoryManger implements Observable {
     private RepositoryManger() {
         statusMap.put(Type.METADATA, DownloadStatus.FINNISHED);
         statusMap.put(Type.MODSET, DownloadStatus.FINNISHED);
+        statusMap.put(Type.CHANGELOG, DownloadStatus.FINNISHED);
     }
 
     private void getAsync(String urlS, Callback.HttpCallback callback) {
@@ -55,7 +57,7 @@ public class RepositoryManger implements Observable {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(url)
                         .GET()
-                        .headers("Content-Type", "text/plain;charset=UTF-8")
+                        .headers("User-Agent", ArmA3Launcher.USER_AGENT)
                         .timeout(Duration.of(3, SECONDS))
                         .build();
 
@@ -191,6 +193,26 @@ public class RepositoryManger implements Observable {
         });
     }
 
+    public void refreshChangelog() {
+        statusMap.replace(Type.CHANGELOG, DownloadStatus.RUNNING);
+        RepositoryManger.getInstance().notifyObservers(Type.CHANGELOG.toString());
+
+        getAsync(ArmA3Launcher.config.getString("sync.url") + "/.sync/changelog.txt", new Callback.HttpCallback() {
+            @Override
+            public void response(Response r) {
+                if (!r.isSuccessful()) {
+                    statusMap.replace(Type.CHANGELOG, DownloadStatus.ERROR);
+                    RepositoryManger.getInstance().notifyObservers(Type.CHANGELOG.toString());
+                    return;
+                }
+
+                statusMap.replace(Type.CHANGELOG, DownloadStatus.FINNISHED);
+                RepositoryManger.getInstance().notifyObservers(Type.CHANGELOG.toString());
+                Changelog.setChangelog(r.getBody());
+            }
+        });
+    }
+
     public static RepositoryManger getInstance() {
         if (instance == null) instance = new RepositoryManger();
         return instance;
@@ -218,7 +240,8 @@ public class RepositoryManger implements Observable {
     public enum Type {
 
         METADATA("metadata"),
-        MODSET("modset");
+        MODSET("modset"),
+        CHANGELOG("changelog");
 
         private String modset;
 

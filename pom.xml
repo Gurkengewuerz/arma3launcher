@@ -6,7 +6,7 @@
 
     <groupId>de.mc8051</groupId>
     <artifactId>arma3launcher</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.1000</version>
 
     <repositories>
         <repository>
@@ -44,7 +44,7 @@
         <dependency>
             <groupId>com.github.Gurkengewuerz</groupId>
             <artifactId>zsyncer</artifactId>
-            <version>locale_fix-2f7565d392-1</version>
+            <version>1de0d3f651</version>
         </dependency>
     </dependencies>
 
@@ -60,6 +60,13 @@
 
             <resource>
                 <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/icons</directory>
                 <filtering>false</filtering>
                 <includes>
                     <include>**/*</include>

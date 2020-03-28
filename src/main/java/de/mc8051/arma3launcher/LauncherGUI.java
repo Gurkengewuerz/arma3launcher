@@ -8,10 +8,12 @@ import de.mc8051.arma3launcher.model.PresetTableModel;
 import de.mc8051.arma3launcher.model.RepositoryTreeNode;
 import de.mc8051.arma3launcher.model.ServerTableModel;
 import de.mc8051.arma3launcher.objects.AbstractMod;
+import de.mc8051.arma3launcher.objects.Changelog;
 import de.mc8051.arma3launcher.objects.Mod;
 import de.mc8051.arma3launcher.objects.ModFile;
 import de.mc8051.arma3launcher.objects.Modset;
 import de.mc8051.arma3launcher.objects.Server;
+import de.mc8051.arma3launcher.repo.DownloadStatus;
 import de.mc8051.arma3launcher.repo.FileChecker;
 import de.mc8051.arma3launcher.repo.RepositoryManger;
 import de.mc8051.arma3launcher.repo.SyncList;
@@ -19,11 +21,12 @@ import de.mc8051.arma3launcher.repo.Syncer;
 import de.mc8051.arma3launcher.steam.SteamTimer;
 import de.mc8051.arma3launcher.utils.Callback;
 import de.mc8051.arma3launcher.utils.Humanize;
+import de.mc8051.arma3launcher.utils.ImageUtils;
 import de.mc8051.arma3launcher.utils.LangUtils;
+import de.mc8051.arma3launcher.utils.TaskBarUtils;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
+import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.text.DefaultFormatter;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -34,14 +37,23 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Properties;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -60,7 +72,6 @@ public class LauncherGUI implements Observer {
     private JLabel steamStatus;
     private JLabel armaStatus;
     private JButton presetPanelButton;
-    private JPanel logo;
     private JPanel presetsTab;
     private JButton playPresetButton;
     private JButton clonePresetButton;
@@ -129,17 +140,32 @@ public class LauncherGUI implements Observer {
     private JLabel syncDeletedFilesLabel;
     private JLabel syncAddedFilesLabel;
     private JLabel syncChangedFilesLabel;
-    private JLabel syncSizeLabel;
+    public JLabel syncSizeLabel;
     private JLabel syncChangedFileSizeLabel;
-    private JLabel syncFileCountLabel;
-    public JLabel syncDownloadedLabel;
+    public JLabel syncFileCountLabel;
     public JLabel syncDownloadSpeedLabel;
     private JSplitPane splitView;
+    public JLabel syncStatusLabel;
+    private JLabel logo;
+    private JLabel aboutLabel;
+    private JButton changelogButton;
+    private JPanel changelogTab;
+    private JPanel aboutTab;
+    private JTextArea changelogPane;
+    private JScrollPane changelogScroll;
+    private JLabel twitterIcon;
+    private JLabel githubIcon;
+    private JTextPane disclaimer;
+    private JLabel aboutLogo;
+    private JLabel aboutClient;
+    private JLabel aboutProjectLabel;
+    private JLabel aboutDeveloperLabel;
+    private JLabel aboutCopyrightLabel;
 
     private JCheckBoxTree repoTree;
     private FileChecker fileChecker;
     private Syncer syncer;
-    private SyncList lastSynclist;
+    private SyncList lastSynclist = null;
 
     public LauncherGUI() {
         fileChecker = new FileChecker(syncCheckProgress);
@@ -149,6 +175,16 @@ public class LauncherGUI implements Observer {
         SteamTimer.addObserver(this);
         fileChecker.addObserver(this);
         syncer.addObserver(this);
+
+        new Thread(() -> {
+            RepositoryManger.getInstance().refreshMeta();
+            try {
+                Thread.sleep(750);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            RepositoryManger.getInstance().refreshModset();
+        }).start();
 
         updateTreePanel.remove(tree1);
 
@@ -184,63 +220,14 @@ public class LauncherGUI implements Observer {
         updatePanelButton.setMargin(x);
         playPanelButton.setMargin(x);
         presetPanelButton.setMargin(x);
+        changelogButton.setMargin(x);
 
         playPresetButton.setMargin(new Insets(10, 10, 10, 10));
 
-        playPanelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tabbedPane1.setSelectedIndex(0);
-            }
-        });
-
-        updatePanelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tabbedPane1.setSelectedIndex(1);
-            }
-        });
-
-        presetPanelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tabbedPane1.setSelectedIndex(2);
-            }
-        });
-
-        settingsPanelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                tabbedPane1.setSelectedIndex(3);
-            }
-        });
-
         serverTable.setModel(new ServerTableModel());
-
         presetList.setModel(new PresetTableModel());
+
         presetList.setCellRenderer(new PresetListRenderer());
-        presetList.addListSelectionListener(new ListSelectionListener() {
-
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) {
-                    PresetTableModel m = (PresetTableModel) presetList.getModel();
-                    Modset modset = (Modset) m.getElementAt(presetList.getSelectedIndex());
-
-                    if (modset.getType() == Modset.Type.SERVER) {
-                        renamePresetButton.setEnabled(false);
-                        removePresetButtom.setEnabled(false);
-                    } else {
-                        renamePresetButton.setEnabled(true);
-                        removePresetButtom.setEnabled(true);
-                    }
-                    clonePresetButton.setEnabled(true);
-
-                    updateModList(modset);
-                }
-            }
-        });
-
         modList.setCellRenderer(new ModListRenderer());
 
         subtitle.setText(
@@ -255,6 +242,49 @@ public class LauncherGUI implements Observer {
 
         initSettings();
 
+        logo.setIcon(new ImageIcon(ImageUtils.getScaledImage(TaskBarUtils.IMAGE_LGO, 128, 128)));
+        aboutLogo.setIcon(new ImageIcon(ImageUtils.getScaledImage(TaskBarUtils.IMAGE_LGO, 128, 128)));
+
+        aboutClient.setText(ArmA3Launcher.config.getString("name") + " v" + ArmA3Launcher.VERSION);
+
+        aboutDeveloperLabel.setText("<html><a href=''>https://gurkengewuerz.de</a></html>");
+        aboutProjectLabel.setText("<html><a href=''>"+ArmA3Launcher.config.getString("social.github")+"</a></html>");
+
+        InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("disclaimer.html");
+        if(resourceAsStream != null) {
+            Scanner s = new Scanner(resourceAsStream).useDelimiter("\\A");
+            String result = s.hasNext() ? s.next() : "";
+            disclaimer.setText(result);
+        }
+
+
+        aboutCopyrightLabel.setText(aboutCopyrightLabel.getText().replace("{year}", "" + Calendar.getInstance().get(Calendar.YEAR)));
+
+        twitterIcon.setBorder(new EmptyBorder(2,2,2,2));
+        githubIcon.setBorder(new EmptyBorder(2,2,2,2));
+
+        settingScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        updateTreeScrolPane.getVerticalScrollBar().setUnitIncrement(16);
+        splitView.setDividerLocation(-1);
+
+        presetList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                PresetTableModel m = (PresetTableModel) presetList.getModel();
+                Modset modset = (Modset) m.getElementAt(presetList.getSelectedIndex());
+
+                if (modset.getType() == Modset.Type.SERVER) {
+                    renamePresetButton.setEnabled(false);
+                    removePresetButtom.setEnabled(false);
+                } else {
+                    renamePresetButton.setEnabled(true);
+                    removePresetButtom.setEnabled(true);
+                }
+                clonePresetButton.setEnabled(true);
+
+                updateModList(modset);
+            }
+        });
+
         settingsResetDefault.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -268,73 +298,106 @@ public class LauncherGUI implements Observer {
             }
         });
 
-        settingScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        updateTreeScrolPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        collapseAllButton.addActionListener(e -> repoTree.collapseAllNodes());
+        playPanelButton.addActionListener(e -> tabbedPane1.setSelectedIndex(0));
+        updatePanelButton.addActionListener(e -> tabbedPane1.setSelectedIndex(1));
+        changelogButton.addActionListener(e -> {
+            tabbedPane1.setSelectedIndex(2);
+            Changelog.refresh();
+        });
+        presetPanelButton.addActionListener(e -> tabbedPane1.setSelectedIndex(3));
+        settingsPanelButton.addActionListener(e -> tabbedPane1.setSelectedIndex(4));
 
         refreshRepoButton.addActionListener(e -> RepositoryManger.getInstance().refreshModset());
-        expandAllButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                repoTree.expandAllNodes();
-            }
-        });
-        collapseAllButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                repoTree.collapseAllNodes();
-            }
-        });
+        expandAllButton.addActionListener(e -> repoTree.expandAllNodes());
+        syncDownloadAbortButton.addActionListener(e -> syncer.stop());
+        syncCheckAbortButton.addActionListener(e -> fileChecker.stop());
 
-        new Thread(() -> {
-            RepositoryManger.getInstance().refreshMeta();
-            try {
-                Thread.sleep(750);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            RepositoryManger.getInstance().refreshModset();
-        }).start();
 
-        syncCheckButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                syncCheckButton.setEnabled(false);
-                syncCheckAbortButton.setEnabled(true);
-                syncCheckStatusLabel.setText("Running!");
-                new Thread(() -> fileChecker.check()).start();
+        syncCheckButton.addActionListener(e -> {
+            syncCheckButton.setEnabled(false);
+            syncCheckAbortButton.setEnabled(true);
+            syncCheckStatusLabel.setText("Running!");
+            new Thread(() -> fileChecker.check()).start();
 
-                repoTree.setCheckboxesEnabled(false);
-                repoTree.setCheckboxesChecked(false);
-            }
+            refreshRepoButton.setEnabled(false);
+
+            repoTree.setCheckboxesEnabled(false);
+            repoTree.setCheckboxesChecked(false);
         });
 
-        syncCheckAbortButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                fileChecker.stop();
-            }
+        syncDownloadButton.addActionListener(e -> {
+            if (!fileChecker.isChecked()) return;
+            syncDownloadButton.setEnabled(false);
+            syncDownloadAbortButton.setEnabled(true);
+            syncPauseButton.setEnabled(true);
+            syncCheckButton.setEnabled(false);
+            refreshRepoButton.setEnabled(false);
+            new Thread(() -> syncer.sync(lastSynclist.clone())).start();
         });
 
-        syncDownloadButton.addActionListener(new ActionListener() {
+        syncPauseButton.addActionListener(e -> {
+            syncer.setPaused(!syncer.isPaused());
+            syncPauseButton.setEnabled(false);
+        });
+
+        twitterIcon.addMouseListener(new MouseAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                if(lastSynclist == null) return;
-                new Thread(() -> syncer.sync(lastSynclist.clone())).start();
+            public void mouseEntered(MouseEvent e) {
+                twitterIcon.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                twitterIcon.setBorder(new EmptyBorder(2,2,2,2));
             }
         });
 
-        syncDownloadAbortButton.addActionListener(new ActionListener() {
+        githubIcon.addMouseListener(new MouseAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                syncer.stop();
+            public void mouseEntered(MouseEvent e) {
+                githubIcon.setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                githubIcon.setBorder(new EmptyBorder(2,2,2,2));
             }
         });
 
-        syncPauseButton.addActionListener(new ActionListener() {
+        aboutLabel.addMouseListener(new MouseAdapter() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                syncer.setPaused(!syncer.isPaused());
-                syncPauseButton.setEnabled(false);
+            public void mouseClicked(MouseEvent e) {
+                tabbedPane1.setSelectedIndex(5);
+            }
+        });
+
+        twitterIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                openURL(ArmA3Launcher.config.getString("social.twitter"));
+            }
+        });
+
+        githubIcon.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                openURL(ArmA3Launcher.config.getString("social.github"));
+            }
+        });
+
+        aboutDeveloperLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                openURL("https://gurkengewuerz.de");
+            }
+        });
+
+        aboutProjectLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                openURL(ArmA3Launcher.config.getString("social.github"));
             }
         });
     }
@@ -377,6 +440,7 @@ public class LauncherGUI implements Observer {
             playPresetButton.setEnabled(false);
             syncCheckButton.setEnabled(false);
             refreshRepoButton.setEnabled(false);
+            syncDownloadButton.setEnabled(false);
 
             playButton.setToolTipText(LangUtils.getInstance().getString("arma_running"));
             playPresetButton.setToolTipText(LangUtils.getInstance().getString("arma_running"));
@@ -408,11 +472,15 @@ public class LauncherGUI implements Observer {
                 syncCheckButton.setEnabled(true);
                 refreshRepoButton.setEnabled(true);
 
+                syncDownloadButton.setEnabled(fileChecker.isChecked());
+
                 syncCheckButton.setToolTipText(null);
                 refreshRepoButton.setToolTipText(null);
             } else {
-                syncCheckButton.setEnabled(true);
-                refreshRepoButton.setEnabled(true);
+                syncCheckButton.setEnabled(false);
+                refreshRepoButton.setEnabled(false);
+
+                syncDownloadButton.setEnabled(false);
 
                 syncCheckButton.setToolTipText(LangUtils.getInstance().getString("path_not_set"));
                 refreshRepoButton.setToolTipText(LangUtils.getInstance().getString("path_not_set"));
@@ -655,7 +723,7 @@ public class LauncherGUI implements Observer {
                     RepositoryTreeNode lastNode = modFolder;
                     ArrayList<String> path = modfile.getPath();
 
-                    for (int i = 0; i < path.size() -1; i++) {
+                    for (int i = 0; i < path.size() - 1; i++) {
                         boolean found = false;
 
                         for (int j = 0; j < lastNode.getChildCount(); j++) {
@@ -703,11 +771,11 @@ public class LauncherGUI implements Observer {
             public void checkStateChanged(JCheckBoxTree.CheckChangeEvent event) {
                 lastSynclist = getSyncList();
                 if (lastSynclist.getSize() != 0)
-                    syncSizeLabel.setText(Humanize.binaryPrefix(lastSynclist.getSize()));
-                else syncSizeLabel.setText("0.0 B");
+                    syncSizeLabel.setText("0.0 B/" + Humanize.binaryPrefix(lastSynclist.getSize()));
+                else syncSizeLabel.setText("0.0 B/0.0 B");
                 if (lastSynclist.getCount() != 0) {
                     syncDownloadButton.setEnabled(true);
-                    syncFileCountLabel.setText("" + lastSynclist.getCount());
+                    syncFileCountLabel.setText("0/" + lastSynclist.getCount());
                 } else {
                     syncDownloadButton.setEnabled(false);
                     syncFileCountLabel.setText("");
@@ -838,6 +906,17 @@ public class LauncherGUI implements Observer {
                     refreshRepoButton.setEnabled(false);
                     break;
             }
+        } else if (s.equals(RepositoryManger.Type.CHANGELOG.toString())) {
+            if (RepositoryManger.getInstance().getStatus(RepositoryManger.Type.CHANGELOG) == DownloadStatus.FINNISHED) {
+                SwingUtilities.invokeLater(() -> {
+                    changelogPane.setText(Changelog.get());
+                    changelogPane.setCaretPosition(0);
+                    changelogPane.setLineWrap(true);
+                    changelogPane.setWrapStyleWord(true);
+                    changelogPane.revalidate();
+                    changelogPane.repaint();
+                });
+            }
         } else if (s.equals("fileChecker")) {
             syncCheckButton.setEnabled(true);
             syncCheckAbortButton.setEnabled(false);
@@ -867,26 +946,70 @@ public class LauncherGUI implements Observer {
             syncPauseButton.setEnabled(false);
 
             repoTree.setCheckboxesChecked(false);
+            refreshRepoButton.setEnabled(true);
 
             syncAddedFilesLabel.setText("" + 0);
             syncChangedFilesLabel.setText("" + 0);
             syncDeletedFilesLabel.setText("" + 0);
 
             syncChangedFileSizeLabel.setText("0.0 B");
+
         } else if (s.equals("syncStopped")) {
             new Thread(() -> fileChecker.check()).start();
+            SwingUtilities.invokeLater(() -> {
+                syncDownloadButton.setEnabled(false);
+                syncDownloadAbortButton.setEnabled(false);
+                syncPauseButton.setEnabled(false);
+
+                syncStatusLabel.setText("Sync stopped");
+                syncFileProgress.setValue(0);
+                TaskBarUtils.getInstance().setValue(0);
+                TaskBarUtils.getInstance().off();
+            });
         } else if (s.equals("syncComplete")) {
             new Thread(() -> fileChecker.check()).start();
+            SwingUtilities.invokeLater(() -> {
+                syncDownloadButton.setEnabled(false);
+                syncDownloadAbortButton.setEnabled(false);
+                syncPauseButton.setEnabled(false);
+
+                syncStatusLabel.setText("Sync finished");
+                syncFileProgress.setValue(0);
+                syncFileProgress.setString("");
+                TaskBarUtils.getInstance().setValue(0);
+                TaskBarUtils.getInstance().off();
+                TaskBarUtils.getInstance().attention();
+                TaskBarUtils.getInstance().notification("Sync complete", "", TrayIcon.MessageType.INFO);
+            });
         } else if (s.equals("syncContinue")) {
-            syncDownloadAbortButton.setEnabled(true);
-            syncPauseButton.setEnabled(true);
-            syncPauseButton.setText(LangUtils.getInstance().getString("pause"));
-            syncDownloadButton.setEnabled(false);
+            SwingUtilities.invokeLater(() -> {
+                syncDownloadAbortButton.setEnabled(true);
+                syncPauseButton.setEnabled(true);
+                syncPauseButton.setText(LangUtils.getInstance().getString("pause"));
+                syncDownloadButton.setEnabled(false);
+                TaskBarUtils.getInstance().normal();
+            });
         } else if (s.equals("syncPaused")) {
-            syncDownloadAbortButton.setEnabled(true);
-            syncPauseButton.setEnabled(true);
-            syncPauseButton.setText(LangUtils.getInstance().getString("resume"));
-            syncDownloadButton.setEnabled(false);
+            SwingUtilities.invokeLater(() -> {
+                syncDownloadAbortButton.setEnabled(true);
+                syncPauseButton.setEnabled(true);
+                syncPauseButton.setText(LangUtils.getInstance().getString("resume"));
+                syncDownloadButton.setEnabled(false);
+                syncFileProgress.setValue(0);
+                TaskBarUtils.getInstance().paused();
+            });
+        }
+    }
+
+    public void exit() {
+        fileChecker.stop();
+        syncer.stop();
+    }
+
+    public void openURL(String url) {
+        try {
+            Desktop.getDesktop().browse(new URL(url).toURI());
+        } catch (Exception ignored) {
         }
     }
 }

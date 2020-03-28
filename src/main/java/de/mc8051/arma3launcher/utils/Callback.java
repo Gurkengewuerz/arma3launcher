@@ -9,11 +9,15 @@ import java.io.File;
  */
 public class Callback {
 
-    public static interface JFileSelectCallback {                   //declare an interface with the callback methods, so you can use on more than one class and just refer to the interface
+    public interface JFileSelectCallback {
         boolean allowSelection(File path);
     }
 
-    public static interface HttpCallback {
+    public interface HttpCallback {
         void response(Response r);
+    }
+
+    public interface ChangelogCallback {
+        void response(String changelog);
     }
 }
