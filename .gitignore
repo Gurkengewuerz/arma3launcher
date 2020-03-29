@@ -3,3 +3,5 @@
 out/
 META-INF/
 target/
+gui/target/
+patcher/target/

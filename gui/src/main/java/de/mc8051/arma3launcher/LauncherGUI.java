@@ -1,5 +1,6 @@
 package de.mc8051.arma3launcher;
 
+import com.sun.management.OperatingSystemMXBean;
 import de.mc8051.arma3launcher.interfaces.Observer;
 import de.mc8051.arma3launcher.model.JCheckBoxTree;
 import de.mc8051.arma3launcher.model.ModListRenderer;
@@ -737,7 +738,7 @@ public class LauncherGUI implements Observer {
 
         // -------------------------------- SPINNER --------------------------------
 
-        com.sun.management.OperatingSystemMXBean mxbean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        OperatingSystemMXBean mxbean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         int memorySize = (int) (mxbean.getTotalPhysicalMemorySize() / 1024);
 
         initSpinner(settingsMaxMemSpinner, "MaxMem", Parameter.ParameterType.ARMA, -1, memorySize);
