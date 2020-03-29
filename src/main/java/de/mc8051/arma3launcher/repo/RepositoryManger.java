@@ -10,6 +10,7 @@ import de.mc8051.arma3launcher.objects.ModFile;
 import de.mc8051.arma3launcher.objects.Modset;
 import de.mc8051.arma3launcher.objects.Server;
 import de.mc8051.arma3launcher.utils.Callback;
+import org.ini4j.Ini;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -27,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -93,10 +95,19 @@ public class RepositoryManger implements Observable {
                 }
 
                 try {
+                    Modset.MODSET_LIST.clear();
+                    Ini.Section section = ArmA3Launcher.user_config.get("presets");
+                    if (section != null) {
+                        for (String key : section.keySet()) {
+                            String jsonString = section.get(key);
+                            JSONArray ja = new JSONArray(jsonString);
+                            new Modset(key, ja, Modset.Type.CLIENT);
+                        }
+                    }
+
                     JSONObject jsonObject = new JSONObject(r.getBody());
 
                     if (jsonObject.has("modsets")) {
-                        Modset.MODSET_LIST.clear();
                         JSONArray modsets = jsonObject.getJSONArray("modsets");
                         if (modsets.length() > 0) {
                             for (int i = 0; i < modsets.length(); i++) {

@@ -1,6 +1,6 @@
 {
   "name": "TheTown Client",
-  "title": "Welcome! :P",
+  "title": "Willkommen!",
   "subtitle": "${name} v${version}",
   "sync": {
     "useragent": "TheTownSyncer",

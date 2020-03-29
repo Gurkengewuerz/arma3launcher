@@ -42,10 +42,14 @@
                 <properties>
                   <alignmentY value="0.0"/>
                   <borderPainted value="true"/>
+                  <focusCycleRoot value="false"/>
                   <focusPainted value="false"/>
-                  <focusable value="true"/>
+                  <focusable value="false"/>
                   <font size="16"/>
+                  <horizontalAlignment value="2"/>
                   <icon value="icons/settings_16.png"/>
+                  <iconTextGap value="10"/>
+                  <inheritsPopupMenu value="true"/>
                   <margin top="0" left="0" bottom="0" right="0"/>
                   <text resource-bundle="lang" key="settings"/>
                 </properties>
@@ -64,8 +68,11 @@
                 </constraints>
                 <properties>
                   <focusPainted value="false"/>
+                  <focusable value="false"/>
                   <font size="16"/>
+                  <horizontalAlignment value="2"/>
                   <icon value="icons/download_16.png"/>
+                  <iconTextGap value="10"/>
                   <text resource-bundle="lang" key="update"/>
                 </properties>
               </component>
@@ -75,8 +82,11 @@
                 </constraints>
                 <properties>
                   <focusPainted value="false"/>
+                  <focusable value="false"/>
                   <font size="16"/>
+                  <horizontalAlignment value="2"/>
                   <icon value="icons/play_16.png"/>
+                  <iconTextGap value="10"/>
                   <margin top="0" left="0" bottom="0" right="0"/>
                   <text resource-bundle="lang" key="play"/>
                 </properties>
@@ -168,8 +178,11 @@
                 </constraints>
                 <properties>
                   <focusPainted value="false"/>
+                  <focusable value="false"/>
                   <font size="16"/>
+                  <horizontalAlignment value="2"/>
                   <icon value="icons/preset_16.png"/>
+                  <iconTextGap value="10"/>
                   <margin top="0" left="0" bottom="0" right="0"/>
                   <text resource-bundle="lang" key="presets"/>
                 </properties>
@@ -180,8 +193,11 @@
                 </constraints>
                 <properties>
                   <focusPainted value="false"/>
+                  <focusable value="false"/>
                   <font size="16"/>
+                  <horizontalAlignment value="2"/>
                   <icon value="icons/changelog_16.png"/>
+                  <iconTextGap value="10"/>
                   <text resource-bundle="lang" key="changelog"/>
                 </properties>
               </component>
@@ -445,20 +461,24 @@
                                           <text resource-bundle="lang" key="abort"/>
                                         </properties>
                                       </component>
-                                      <component id="d7e4b" class="javax.swing.JButton" binding="syncCheckButton">
+                                      <component id="d7e4b" class="javax.swing.JButton" binding="syncIntensiveCheckButton">
                                         <constraints>
                                           <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                                         </constraints>
                                         <properties>
                                           <enabled value="false"/>
-                                          <text resource-bundle="lang" key="check"/>
+                                          <text resource-bundle="lang" key="intensive_check"/>
                                         </properties>
                                       </component>
-                                      <hspacer id="a2208">
+                                      <component id="df55f" class="javax.swing.JButton" binding="syncFastCheckButton">
                                         <constraints>
-                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                                         </constraints>
-                                      </hspacer>
+                                        <properties>
+                                          <enabled value="false"/>
+                                          <text resource-bundle="lang" key="fast_check"/>
+                                        </properties>
+                                      </component>
                                     </children>
                                   </grid>
                                   <component id="c97ef" class="javax.swing.JLabel">
@@ -561,23 +581,25 @@
                               </component>
                             </children>
                           </grid>
-                          <grid id="b8ac" layout-manager="GridLayoutManager" row-count="4" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                            <margin top="0" left="0" bottom="0" right="0"/>
+                          <grid id="b8ac" layout-manager="FormLayout">
+                            <rowspec value="center:max(d;4px):noGrow"/>
+                            <rowspec value="top:4dlu:noGrow"/>
+                            <rowspec value="center:max(d;4px):noGrow"/>
+                            <rowspec value="top:4dlu:noGrow"/>
+                            <rowspec value="center:max(d;4px):noGrow"/>
+                            <rowspec value="top:4dlu:noGrow"/>
+                            <rowspec value="center:max(d;4px):noGrow"/>
+                            <colspec value="fill:d:grow"/>
+                            <colspec value="left:4dlu:noGrow"/>
+                            <colspec value="fill:d:grow"/>
                             <constraints border-constraint="Center"/>
                             <properties/>
                             <border type="none"/>
                             <children>
-                              <component id="e74aa" class="javax.swing.JLabel">
-                                <constraints>
-                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                                <properties>
-                                  <text resource-bundle="lang" key="total_file_size"/>
-                                </properties>
-                              </component>
                               <component id="f5997" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
                                 </constraints>
                                 <properties>
                                   <text resource-bundle="lang" key="speed"/>
@@ -585,31 +607,17 @@
                               </component>
                               <component id="25551" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
                                 </constraints>
                                 <properties>
                                   <text resource-bundle="lang" key="remaining_time"/>
                                 </properties>
                               </component>
-                              <component id="b28b6" class="javax.swing.JLabel" binding="syncSizeLabel">
+                              <component id="9148" class="javax.swing.JLabel" binding="syncFileCountLabel">
                                 <constraints>
-                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                                <properties>
-                                  <text value="0.0 B"/>
-                                </properties>
-                              </component>
-                              <component id="617c7" class="javax.swing.JLabel" binding="syncDownloadSpeedLabel">
-                                <constraints>
-                                  <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                                <properties>
-                                  <text value=""/>
-                                </properties>
-                              </component>
-                              <component id="b64ac" class="javax.swing.JLabel">
-                                <constraints>
-                                  <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
                                 </constraints>
                                 <properties>
                                   <text value=""/>
@@ -617,15 +625,44 @@
                               </component>
                               <component id="28be3" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
                                 </constraints>
                                 <properties>
                                   <text resource-bundle="lang" key="file_count"/>
                                 </properties>
                               </component>
-                              <component id="9148" class="javax.swing.JLabel" binding="syncFileCountLabel">
+                              <component id="e74aa" class="javax.swing.JLabel">
                                 <constraints>
-                                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
+                                </constraints>
+                                <properties>
+                                  <text resource-bundle="lang" key="total_file_size"/>
+                                </properties>
+                              </component>
+                              <component id="b28b6" class="javax.swing.JLabel" binding="syncSizeLabel">
+                                <constraints>
+                                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
+                                </constraints>
+                                <properties>
+                                  <text value="0.0 B/0.0 B"/>
+                                </properties>
+                              </component>
+                              <component id="617c7" class="javax.swing.JLabel" binding="syncDownloadSpeedLabel">
+                                <constraints>
+                                  <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
+                                </constraints>
+                                <properties>
+                                  <text value=""/>
+                                </properties>
+                              </component>
+                              <component id="63dca" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="6" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <forms/>
                                 </constraints>
                                 <properties>
                                   <text value=""/>
@@ -793,7 +830,7 @@
                                   <text resource-bundle="lang" key="expand_all"/>
                                 </properties>
                               </component>
-                              <component id="43543" class="javax.swing.JComboBox" binding="comboBox1" default-binding="true">
+                              <component id="43543" class="javax.swing.JComboBox" binding="syncPresetCombo">
                                 <constraints>
                                   <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
                                 </constraints>
@@ -945,10 +982,78 @@
                                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
-                                  <verticalScrollBarPolicy value="22"/>
+                                  <horizontalScrollBarPolicy value="31"/>
+                                  <verticalScrollBarPolicy value="20"/>
                                 </properties>
-                                <border type="none"/>
-                                <children/>
+                                <border type="empty"/>
+                                <children>
+                                  <grid id="87071" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="100" left="70" bottom="100" right="70"/>
+                                    <constraints/>
+                                    <properties/>
+                                    <border type="none"/>
+                                    <children>
+                                      <grid id="1679e" binding="presetNotePane" layout-manager="FormLayout">
+                                        <rowspec value="center:d:noGrow"/>
+                                        <rowspec value="top:4dlu:noGrow"/>
+                                        <rowspec value="center:max(d;4px):noGrow"/>
+                                        <rowspec value="top:4dlu:noGrow"/>
+                                        <rowspec value="center:max(d;4px):noGrow"/>
+                                        <colspec value="fill:d:grow"/>
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                        </constraints>
+                                        <properties>
+                                          <visible value="false"/>
+                                        </properties>
+                                        <border type="none"/>
+                                        <children>
+                                          <component id="7b832" class="javax.swing.JLabel">
+                                            <constraints>
+                                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                              <forms/>
+                                            </constraints>
+                                            <properties>
+                                              <font size="14" style="1"/>
+                                              <text resource-bundle="lang" key="note"/>
+                                            </properties>
+                                          </component>
+                                          <component id="d466d" class="javax.swing.JButton" binding="presetNoteButton">
+                                            <constraints>
+                                              <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                              <forms/>
+                                            </constraints>
+                                            <properties>
+                                              <text resource-bundle="lang" key="clone_preset"/>
+                                            </properties>
+                                          </component>
+                                          <grid id="8f1ff" binding="presetNotePaneWrapper" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                            <margin top="0" left="0" bottom="0" right="0"/>
+                                            <constraints>
+                                              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                              <forms/>
+                                            </constraints>
+                                            <properties/>
+                                            <border type="none"/>
+                                            <children>
+                                              <component id="862fc" class="javax.swing.JTextPane" binding="presetNoteTextPane">
+                                                <constraints>
+                                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="6" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                                    <preferred-size width="200" height="50"/>
+                                                  </grid>
+                                                </constraints>
+                                                <properties>
+                                                  <enabled value="true"/>
+                                                  <text resource-bundle="lang" key="presets_note"/>
+                                                </properties>
+                                              </component>
+                                            </children>
+                                          </grid>
+                                        </children>
+                                      </grid>
+                                    </children>
+                                  </grid>
+                                </children>
                               </scrollpane>
                               <component id="3960a" class="javax.swing.JLabel">
                                 <constraints>
@@ -1033,7 +1138,9 @@
                                         <preferred-size width="150" height="50"/>
                                       </grid>
                                     </constraints>
-                                    <properties/>
+                                    <properties>
+                                      <selectionMode value="1"/>
+                                    </properties>
                                   </component>
                                   <component id="4fbf3" class="javax.swing.JList" binding="modList">
                                     <constraints>

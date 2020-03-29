@@ -8,9 +8,7 @@ import de.mc8051.arma3launcher.objects.Mod;
 import de.mc8051.arma3launcher.objects.ModFile;
 
 import javax.swing.*;
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,6 +43,10 @@ public class FileChecker implements Observable {
     }
 
     public void check() {
+        check(false);
+    }
+
+    public void check(boolean fastscan) {
         deleted.clear();
         changed.clear();
         changedCount = 0;
@@ -59,16 +61,16 @@ public class FileChecker implements Observable {
         });
 
         for (AbstractMod abstractMod : RepositoryManger.MOD_LIST) {
-            if(stop) {
+            if (stop) {
                 stop = false;
                 notifyObservers("fileCheckerStopped");
                 return;
             }
-            if(abstractMod instanceof Mod) {
+            if (abstractMod instanceof Mod) {
                 Mod m = (Mod) abstractMod;
 
                 for (ModFile mf : m.getFiles()) {
-                    checkFile(m.getName(), mf);
+                    checkFile(m.getName(), mf, fastscan);
 
                     i++;
                     int finalI = i;
@@ -76,7 +78,7 @@ public class FileChecker implements Observable {
                         pb.setValue(finalI);
                     });
 
-                    if(stop) {
+                    if (stop) {
                         stop = false;
                         notifyObservers("fileCheckerStopped");
                         return;
@@ -84,7 +86,7 @@ public class FileChecker implements Observable {
                 }
             } else if (abstractMod instanceof ModFile) {
                 ModFile mf = (ModFile) abstractMod;
-                checkFile(mf.getName(), mf);
+                checkFile(mf.getName(), mf, fastscan);
                 i++;
                 int finalI1 = i;
                 SwingUtilities.invokeLater(() -> {
@@ -106,11 +108,11 @@ public class FileChecker implements Observable {
         stop = true;
     }
 
-    private void checkFile(String mod, ModFile mf) {
+    private void checkFile(String mod, ModFile mf, boolean fastscan) {
         ArrayList<ModFile> temp = new ArrayList<>();
 
-        if(!mf.exists()) {
-            if(added.containsKey(mod)) temp =added.get(mod);
+        if (!mf.exists()) {
+            if (added.containsKey(mod)) temp = added.get(mod);
             temp.add(mf);
             added.put(mod, temp);
             addedCount++;
@@ -118,19 +120,22 @@ public class FileChecker implements Observable {
             return;
         }
 
-        if(mf.getLocalSize() != mf.getSize() || !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum())) {
-            if(changed.containsKey(mod)) temp =changed.get(mod);
-            temp.add(mf);
-            changed.put(mod, temp);
-            changedCount++;
-            size += mf.getSize();
-            return;
+
+        if (fastscan || !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum())) {
+            if (mf.getLocalSize() != mf.getSize()) {
+                if (changed.containsKey(mod)) temp = changed.get(mod);
+                temp.add(mf);
+                changed.put(mod, temp);
+                changedCount++;
+                size += mf.getSize();
+                return;
+            }
         }
     }
 
     private void checkDeleted() {
         String modPath = ArmA3Launcher.user_config.get("client", "modPath");
-        if(modPath == null) modPath = "";
+        if (modPath == null) modPath = "";
 
         try {
             List<Path> filePathList = Files.find(Paths.get(modPath),
@@ -144,7 +149,7 @@ public class FileChecker implements Observable {
 
                 outerloop:
                 for (AbstractMod abstractMod : RepositoryManger.MOD_LIST) {
-                    if(abstractMod instanceof Mod) {
+                    if (abstractMod instanceof Mod) {
                         Mod m = (Mod) abstractMod;
 
                         for (ModFile mf : m.getFiles()) {

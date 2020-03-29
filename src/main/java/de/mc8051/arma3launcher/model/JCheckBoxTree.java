@@ -233,7 +233,7 @@ public class JCheckBoxTree extends JTree {
     }
 
     // When a node is checked/unchecked, updating the states of the predecessors
-    protected void updatePredecessorsWithCheckMode(TreePath tp, boolean check) {
+    public void updatePredecessorsWithCheckMode(TreePath tp, boolean check) {
         TreePath parentPath = tp.getParentPath();
         // If it is the root, stop the recursive calls and return
         if (parentPath == null) {
@@ -266,7 +266,7 @@ public class JCheckBoxTree extends JTree {
     }
 
     // Recursively checks/unchecks a subtree
-    protected void checkSubTree(TreePath tp, boolean check) {
+    public void checkSubTree(TreePath tp, boolean check) {
         CheckedNode cn = nodesCheckingState.get(tp);
         cn.isSelected = check;
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) tp.getLastPathComponent();

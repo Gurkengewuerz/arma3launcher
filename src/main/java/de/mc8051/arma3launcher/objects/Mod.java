@@ -5,7 +5,7 @@ import java.util.ArrayList;
 /**
  * Created by gurkengewuerz.de on 25.03.2020.
  */
-public class Mod implements AbstractMod {
+public class Mod implements AbstractMod, Comparable {
 
     private String name;
     private long size;
@@ -36,5 +36,10 @@ public class Mod implements AbstractMod {
 
     public Mod clone() {
         return new Mod(name, size, new ArrayList<>(files));
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        return getName().compareToIgnoreCase(((Mod) o).getName());
     }
 }
