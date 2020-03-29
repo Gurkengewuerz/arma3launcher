@@ -51,7 +51,7 @@ public class RepositoryManger implements Observable {
         statusMap.put(Type.CHANGELOG, DownloadStatus.FINNISHED);
     }
 
-    private void getAsync(String urlS, Callback.HttpCallback callback) {
+    public void getAsync(String urlS, Callback.HttpCallback callback) {
         new Thread(() -> {
             try {
                 URI url = new URI(urlS);

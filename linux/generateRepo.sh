@@ -52,7 +52,8 @@ while IFS= read -r line; do
         dirfile=$(dirname "${line}")
         filename=$(basename "${line}")
         filenamezsync=$(basename "${zsyncfile}")
-        $(cd "${dirfile}" && zsyncmake -o "${filenamezsync}" "${filename}")
+        fileurl=$(python3 -c "import urllib.parse; print(urllib.parse.quote(input()))" <<< "${filename}")
+        $(cd "${dirfile}" && zsyncmake -u ${fileurl} -o "${filenamezsync}" "${filename}")
         if [ $? -eq 0 ]; then
             echo "Success: Generated ${zsyncfile}"
         else

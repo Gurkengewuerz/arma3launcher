@@ -1,6 +1,7 @@
 package de.mc8051.arma3launcher.utils;
 
 import de.mc8051.arma3launcher.repo.Response;
+import de.mc8051.arma3launcher.repo.Version;
 
 import java.io.File;
 
@@ -20,4 +21,9 @@ public class Callback {
     public interface ChangelogCallback {
         void response(String changelog);
     }
+
+    public interface NeedUpdateCallback {
+        void response(boolean needUpdate, Version newestVersion);
+    }
+
 }

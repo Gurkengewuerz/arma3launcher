@@ -20,6 +20,8 @@ import de.mc8051.arma3launcher.repo.FileChecker;
 import de.mc8051.arma3launcher.repo.RepositoryManger;
 import de.mc8051.arma3launcher.repo.SyncList;
 import de.mc8051.arma3launcher.repo.Syncer;
+import de.mc8051.arma3launcher.repo.Updater;
+import de.mc8051.arma3launcher.repo.Version;
 import de.mc8051.arma3launcher.steam.SteamTimer;
 import de.mc8051.arma3launcher.utils.Callback;
 import de.mc8051.arma3launcher.utils.Humanize;
@@ -132,7 +134,6 @@ public class LauncherGUI implements Observer {
     private JButton syncCheckAbortButton;
     private JButton syncIntensiveCheckButton;
     public JProgressBar syncDownloadProgress;
-    public JProgressBar syncFileProgress;
     private JButton syncDownloadButton;
     private JButton syncDownloadAbortButton;
     private JButton syncPauseButton;
@@ -171,11 +172,13 @@ public class LauncherGUI implements Observer {
     private JTextPane presetNoteTextPane;
     private JPanel presetNotePaneWrapper;
     private JPanel presetNotePane;
+    private JLabel aboutUpdateLabel;
 
     private JCheckBoxTree repoTree;
     private FileChecker fileChecker;
     private Syncer syncer;
     private SyncList lastSynclist = null;
+    private Updater updater = new Updater();
 
     public LauncherGUI() {
         fileChecker = new FileChecker(syncCheckProgress);
@@ -473,7 +476,7 @@ public class LauncherGUI implements Observer {
 
             Object newNameO = JOptionPane.showInputDialog(null, "",
                     LangUtils.getInstance().getString("new_modset_name"), JOptionPane.QUESTION_MESSAGE, null, null, selectedModset.getName());
-            if(newNameO == null) return;
+            if (newNameO == null) return;
             String newName = (String) newNameO;
             if (newName.isEmpty()) return;
             if (Modset.MODSET_LIST.containsKey(newName)) {
@@ -494,7 +497,7 @@ public class LauncherGUI implements Observer {
                     DefaultComboBoxModel<Modset> model = (DefaultComboBoxModel<Modset>) syncPresetCombo.getModel();
                     Modset elementAt = model.getElementAt(((JComboBox) e.getItemSelectable()).getSelectedIndex());
                     repoTree.setCheckboxesChecked(false);
-                    if(elementAt.getType() == Modset.Type.PLACEHOLDER) return;
+                    if (elementAt.getType() == Modset.Type.PLACEHOLDER) return;
 
                     List<String> collect = elementAt.getMods().stream().map(Mod::getName).collect(Collectors.toList());
 
@@ -503,7 +506,7 @@ public class LauncherGUI implements Observer {
 
                     for (int i = 0; i < root.getChildCount(); i++) {
                         TreeNode childAt = root.getChildAt(i);
-                        if(!collect.contains(childAt.toString())) continue;
+                        if (!collect.contains(childAt.toString())) continue;
                         final TreePath treePath = new TreePath(new TreeNode[]{root, childAt});
                         repoTree.checkSubTree(treePath, true);
                         repoTree.updatePredecessorsWithCheckMode(treePath, true);
@@ -512,6 +515,12 @@ public class LauncherGUI implements Observer {
                     repoTree.repaint();
                     updateDownloadLabel();
                 }
+            }
+        });
+
+        updater.needUpdate((needUpdate, newestVersion) -> {
+            if (needUpdate) {
+                SwingUtilities.invokeLater(() -> warnBox(LangUtils.getInstance().getString("client_outdated"), LangUtils.getInstance().getString("please_update")));
             }
         });
     }
@@ -1104,7 +1113,6 @@ public class LauncherGUI implements Observer {
                 syncPauseButton.setEnabled(false);
 
                 syncStatusLabel.setText("Sync stopped");
-                syncFileProgress.setValue(0);
                 TaskBarUtils.getInstance().setValue(0);
                 TaskBarUtils.getInstance().off();
             });
@@ -1116,8 +1124,6 @@ public class LauncherGUI implements Observer {
                 syncPauseButton.setEnabled(false);
 
                 syncStatusLabel.setText("Sync finished");
-                syncFileProgress.setValue(0);
-                syncFileProgress.setString("");
                 TaskBarUtils.getInstance().setValue(0);
                 TaskBarUtils.getInstance().off();
                 TaskBarUtils.getInstance().attention();
@@ -1137,7 +1143,6 @@ public class LauncherGUI implements Observer {
                 syncPauseButton.setEnabled(true);
                 syncPauseButton.setText(LangUtils.getInstance().getString("resume"));
                 syncDownloadButton.setEnabled(false);
-                syncFileProgress.setValue(0);
                 TaskBarUtils.getInstance().paused();
             });
         }
@@ -1145,7 +1150,7 @@ public class LauncherGUI implements Observer {
 
     private void updateModsetList() {
         SwingUtilities.invokeLater(() -> {
-            if (((DefaultComboBoxModel<Modset>)syncPresetCombo.getModel()).getSize() > 0){
+            if (((DefaultComboBoxModel<Modset>) syncPresetCombo.getModel()).getSize() > 0) {
                 syncPresetCombo.setSelectedIndex(0);
             }
             PresetTableModel model = (PresetTableModel) presetList.getModel();
@@ -1220,6 +1225,19 @@ public class LauncherGUI implements Observer {
 
             case SETTING:
                 settingsPanelButton.setBackground(focusBackgroundColor);
+                break;
+
+            case ABOUT:
+                updater.needUpdate(new Callback.NeedUpdateCallback() {
+                    @Override
+                    public void response(boolean needUpdate, Version newestVersion) {
+                        if (needUpdate) {
+                            SwingUtilities.invokeLater(() -> aboutUpdateLabel.setText(LangUtils.getInstance().getString("client_outdated") + ": v" + newestVersion.get()));
+                        } else {
+                            SwingUtilities.invokeLater(() -> aboutUpdateLabel.setText(LangUtils.getInstance().getString("client_up_to_date")));
+                        }
+                    }
+                });
                 break;
         }
 

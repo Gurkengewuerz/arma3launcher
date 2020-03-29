@@ -2,7 +2,8 @@ package de.mc8051.arma3launcher.repo;
 
 import co.bitshfted.xapps.zsync.Zsync;
 import co.bitshfted.xapps.zsync.ZsyncException;
-import co.bitshfted.xapps.zsync.ZsyncObserver;
+import co.bitshfted.xapps.zsync.ZsyncStatsObserver;
+import co.bitshfted.xapps.zsync.http.ContentRange;
 import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.LauncherGUI;
 import de.mc8051.arma3launcher.interfaces.Observable;
@@ -16,6 +17,7 @@ import javax.swing.*;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,7 @@ import java.util.logging.Logger;
 /**
  * Created by gurkengewuerz.de on 25.03.2020.
  */
-public class Syncer extends ZsyncObserver implements Observable {
+public class Syncer implements Observable, SyncListener {
 
     private List<Observer> observerList = new ArrayList<>();
 
@@ -37,19 +39,22 @@ public class Syncer extends ZsyncObserver implements Observable {
     private SyncList modlist;
 
     private boolean currentDownload_failed = false;
-    private String currentDownload_sizeS;
-    private boolean controlfile_downloaded = false;
     private int failed = 0;
     private int success = 0;
 
     private long syncSize;
-    private String syncSizeString;
     private int syncCount;
 
-    private long downloadStarted;
-    private long downloadEnded;
-    private long downloadSize;
-    private long downloadDownloaded;
+    private int syncRealCount;
+
+    private SyncObserver syncObserver;
+
+    private long speedCalcSize = 0L;
+    private long speedCalcTime = 0L;
+
+    private long downloadDownloaded = 0L;
+    private long downloadStarted = 0L;
+    private long downloadSize = 0L;
 
     private Zsync zsync;
     private LauncherGUI gui;
@@ -71,8 +76,12 @@ public class Syncer extends ZsyncObserver implements Observable {
         failed = 0;
         success = 0;
 
+        speedCalcSize = 0;
+        speedCalcTime = 0;
+
+        syncRealCount = 0;
+
         syncSize = ml.getSize();
-        syncSizeString = Humanize.binaryPrefix(syncSize);
         syncCount = ml.getCount();
         SwingUtilities.invokeLater(() -> {
             gui.syncDownloadProgress.setMaximum(syncCount);
@@ -130,10 +139,9 @@ public class Syncer extends ZsyncObserver implements Observable {
                 try {
                     currentDownload = mf;
                     currentDownload_failed = false;
-                    controlfile_downloaded = false;
-                    currentDownload_sizeS = Humanize.binaryPrefix(currentDownload.getSize());
 
-                    zsync.zsync(URI.create(mf.getRemoteFile() + ".zsync"), o, this);
+                    syncObserver = new SyncObserver(this);
+                    zsync.zsync(URI.create(mf.getRemoteFile() + ".zsync"), o, syncObserver);
                 } catch (ZsyncException | IllegalArgumentException e) {
                     Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
                 }
@@ -183,42 +191,40 @@ public class Syncer extends ZsyncObserver implements Observable {
     }
 
     @Override
-    public void zsyncStarted(URI requestedZsyncUri, Zsync.Options options) {
-        super.zsyncStarted(requestedZsyncUri, options);
-
-        SwingUtilities.invokeLater(() -> {
-            gui.syncFileProgress.setValue(0);
-            gui.syncFileProgress.setString("0 %");
-        });
-
-        System.out.println("ZSync started " + options.getOutputFile());
+    public void zsyncStarted(Zsync.Options options) {
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "ZSync started " + options.getOutputFile());
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Sync started"));
     }
 
     @Override
     public void zsyncFailed(Exception exception) {
-        super.zsyncFailed(exception);
         currentDownload_failed = true;
-        System.out.println("Zsync failed " + exception.getMessage());
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "Zsync failed " + exception.getMessage());
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Sync failed"));
     }
 
     @Override
     public void zsyncComplete() {
-        super.zsyncComplete();
+        speedCalcSize+=downloadDownloaded;
+        speedCalcTime+=System.currentTimeMillis()-downloadStarted;
 
-        downloadEnded = System.nanoTime();
-        System.out.println(downloadSize);
-        System.out.println(downloadEnded - downloadStarted);
-        System.out.println((downloadSize / (downloadEnded - downloadStarted)) / 1000);
+        if (speedCalcSize > 20 * 1024 * 1024) {
 
-        System.out.println("Zsync complete");
+            final double speedByte = ((double)speedCalcSize)/((double)speedCalcTime /1000);
+            SwingUtilities.invokeLater(() -> gui.syncDownloadSpeedLabel.setText(Humanize.binaryPrefix(Double.valueOf(speedByte).longValue()) + "/s"));
+            speedCalcSize = 0L;
+            speedCalcTime = 0L;
+        }
+
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "Zsync complete");
 
         if (currentDownload_failed)
             failed++;
         else success++;
 
-        final long finalSize = syncSize - modlist.getSize();
+        syncRealCount+=downloadDownloaded;
+
+        final long finalSize = syncSize - ((syncSize - modlist.getSize() + currentDownload.getSize()) - syncRealCount);
         final int i = success + failed;
         final int percentage = (int) ((double) i / (double) Long.valueOf(syncCount).intValue() * 100);
         final String modPath = currentDownload.getModPath();
@@ -226,7 +232,7 @@ public class Syncer extends ZsyncObserver implements Observable {
         SwingUtilities.invokeLater(() -> {
             gui.syncDownloadProgress.setValue(i);
             gui.syncFileCountLabel.setText(i + "/" + syncCount + " (" + failed + " failed)");
-            gui.syncSizeLabel.setText(Humanize.binaryPrefix(finalSize) + "/" + syncSizeString);
+            gui.syncSizeLabel.setText(Humanize.binaryPrefix(syncRealCount) + "/" + Humanize.binaryPrefix(finalSize));
 
             if (currentDownload_failed)
                 gui.syncStatusLabel.setText(modPath + ": Sync failed");
@@ -241,47 +247,65 @@ public class Syncer extends ZsyncObserver implements Observable {
     }
 
     @Override
-    public void controlFileDownloadingStarted(URI uri, long length) {
-        super.controlFileDownloadingStarted(uri, length);
-        System.out.println("controlFileDownloadingStarted " + length);
+    public void controlFileDownloadingStarted(Path path, long length) {
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "controlFileDownloadingStarted " + length);
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Get Header"));
     }
 
     @Override
-    public void controlFileDownloadingComplete() {
-        super.controlFileDownloadingComplete();
-        System.out.println("controlFileDownloadingComplete");
-        controlfile_downloaded = true;
+    public void controlFileReadingComplete() {
 
-        SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Hashing"));
     }
 
     @Override
-    public void remoteFileDownloadingStarted(URI uri, long length) {
-        super.remoteFileDownloadingStarted(uri, length);
-        System.out.println("remoteFileDownloadingStarted " + length);
+    public void outputFileWritingStarted(long length) {
+        SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Writing File"));
+    }
 
-        downloadSize = length;
-        downloadDownloaded = 0;
-        downloadStarted = System.nanoTime();
+    @Override
+    public void outputFileWritingCompleted() {
 
+    }
+
+    @Override
+    public void inputFileReadingStarted(Path inputFile, long length) {
+        SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Reading File"));
+    }
+
+    @Override
+    public void inputFileReadingComplete() {
+
+    }
+
+    @Override
+    public void controlFileDownloadingComplete() {
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "controlFileDownloadingComplete");
+    }
+
+    @Override
+    public void remoteFileDownloadingInitiated(List<ContentRange> ranges) {
+        downloadStarted = System.currentTimeMillis();
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "remoteFileDownloadingInitiated");
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Downloading"));
     }
 
     @Override
-    public void bytesDownloaded(long bytes) {
-        super.bytesDownloaded(bytes);
-        downloadDownloaded += bytes;
+    public void remoteFileDownloadingStarted(long length) {
+        downloadDownloaded = 0;
+        downloadSize = length;
 
-        if (controlfile_downloaded) {
-            final int percentage = (int) (((double) downloadDownloaded / (double) downloadSize) * 100);
-            SwingUtilities.invokeLater(() -> {
-                gui.syncFileProgress.setValue(percentage);
-                gui.syncFileProgress.setString(percentage + " %   " + Humanize.binaryPrefix(downloadDownloaded) + "/" + currentDownload_sizeS);
-            });
-        }
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "remoteFileDownloadingStarted " + length);
     }
 
+    @Override
+    public void remoteFileDownloadingComplete() {
+        Logger.getLogger(getClass().getName()).log(Level.INFO, "remoteFileDownloadingStarted");
+    }
+
+    @Override
+    public void bytesDownloaded(long bytes) {
+        downloadDownloaded += bytes;
+    }
 
     public boolean isStopped() {
         return stopped;
