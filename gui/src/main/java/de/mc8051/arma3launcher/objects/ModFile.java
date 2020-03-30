@@ -2,6 +2,7 @@ package de.mc8051.arma3launcher.objects;
 
 import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.utils.FileUtils;
+import de.mc8051.arma3launcher.utils.URLUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -105,26 +106,17 @@ public class ModFile implements AbstractMod {
     public String getRemoteFile() {
         String s = ArmA3Launcher.config.getString("sync.url");
         if (parent == null || parent.isEmpty()) {
-            return s + "/" + encodeToURL(getName());
+            return s + "/" + URLUtils.encodeToURL(getName());
         }
 
-        s += "/" + encodeToURL(parent);
+        s += "/" + URLUtils.encodeToURL(parent);
         for (String seg : getPath()) {
-            s += "/" + encodeToURL(seg);
+            s += "/" + URLUtils.encodeToURL(seg);
         }
         return s;
     }
 
     public String getParent() {
         return parent;
-    }
-
-    private String encodeToURL(String s) {
-        try {
-            return URLEncoder.encode(s, StandardCharsets.UTF_8.name()).replace("+", "%20").replace("@", "%40");
-        } catch (UnsupportedEncodingException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
-        }
-        return "";
     }
 }
