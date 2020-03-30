@@ -24,11 +24,12 @@ import de.mc8051.arma3launcher.objects.Server;
 import de.mc8051.arma3launcher.repo.DownloadStatus;
 import de.mc8051.arma3launcher.repo.FileChecker;
 import de.mc8051.arma3launcher.repo.RepositoryManger;
-import de.mc8051.arma3launcher.repo.SyncList;
-import de.mc8051.arma3launcher.repo.Syncer;
 import de.mc8051.arma3launcher.repo.Updater;
 import de.mc8051.arma3launcher.repo.Version;
+import de.mc8051.arma3launcher.repo.sync.SyncList;
+import de.mc8051.arma3launcher.repo.sync.Syncer;
 import de.mc8051.arma3launcher.steam.SteamTimer;
+import de.mc8051.arma3launcher.utils.ArmaUtils;
 import de.mc8051.arma3launcher.utils.Callback;
 import de.mc8051.arma3launcher.utils.Humanize;
 import de.mc8051.arma3launcher.utils.ImageUtils;
@@ -61,6 +62,8 @@ import java.lang.management.ManagementFactory;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -197,6 +200,21 @@ public class LauncherGUI implements Observer {
         SteamTimer.addObserver(this);
         fileChecker.addObserver(this);
         syncer.addObserver(this);
+
+        if (Parameters.ARMA_PATH.toStringParameter().getConfigValue() == null || Parameters.ARMA_PATH.toStringParameter().getConfigValue().isEmpty()) {
+            final Path installationPath = ArmaUtils.getInstallationPath();
+            if (installationPath != null) {
+                Parameters.ARMA_PATH.toStringParameter().save(installationPath.toAbsolutePath().toString());
+                Parameters.MOD_PATH.toStringParameter().save(Paths.get(
+                        installationPath.toAbsolutePath().toString(), ArmA3Launcher.config.getString("name") + " Mods"
+                ).toAbsolutePath().toString());
+                techCheck();
+            } else {
+                SwingUtilities.invokeLater(() -> {
+                    warnBox(LangUtils.getInstance().getString("arma_path_not_found_msg"), LangUtils.getInstance().getString("arma_path_not_found"));
+                });
+            }
+        }
 
         new Thread(() -> {
             RepositoryManger.getInstance().refreshMeta();
@@ -580,7 +598,7 @@ public class LauncherGUI implements Observer {
     }
 
     public void techCheck() {
-        boolean pathSet = ArmA3Launcher.user_config.get("client").containsKey("armaPath") && ArmA3Launcher.user_config.get("client").containsKey("modPath");
+        boolean pathSet = Parameters.ARMA_PATH.toStringParameter().getConfigValue() != null && Parameters.ARMA_PATH.toStringParameter().getConfigValue() != null;
         if (SteamTimer.arma_running) {
             playButton.setEnabled(false);
             playPresetButton.setEnabled(false);
@@ -639,26 +657,6 @@ public class LauncherGUI implements Observer {
         }
     }
 
-    public boolean checkArmaPath(String path) {
-        if (settingsArmaPathText.getText().isEmpty()) return false;
-        File dir = new File(settingsArmaPathText.getText());
-
-        ArrayList<String> search = new ArrayList<String>(Arrays.asList("arma3.exe", "steam.dll"));
-        File[] listOfFiles = dir.listFiles();
-
-        try {
-            for (File file : listOfFiles) {
-                if (search.isEmpty()) return true;
-                if (file.isFile()) {
-                    search.remove(file.getName().toLowerCase());
-                }
-            }
-        } catch (NullPointerException ex) {
-            return false;
-        }
-        return false;
-    }
-
     public void initSettings() {
 
         settingsBackendText.setText(ArmA3Launcher.config.getString("sync.url"));
@@ -683,11 +681,11 @@ public class LauncherGUI implements Observer {
         ((JComboBox<String>) settingsProfileCombo).setModel(new DefaultComboBoxModel<>(readableDirectories));
 
 
-        initFolderChooser(settingsArmaPathText, settingsArmaPathBtn, "armaPath", Parameter.ParameterType.CLIENT, new Callback.JFileSelectCallback() {
+        initFolderChooser(settingsArmaPathText, settingsArmaPathBtn, Parameters.ARMA_PATH.toStringParameter(), new Callback.JFileSelectCallback() {
             @Override
             public boolean allowSelection(File path) {
                 String sPath = path.getAbsolutePath();
-                if (!checkArmaPath(sPath)) {
+                if (!ArmaUtils.checkArmaPath(path.toPath())) {
                     SwingUtilities.invokeLater(() -> warnBox(LangUtils.getInstance().getString("not_arma_dir_msg"), LangUtils.getInstance().getString("not_arma_dir")));
                     return false;
                 }
@@ -704,7 +702,7 @@ public class LauncherGUI implements Observer {
             }
         });
 
-        initFolderChooser(settingsModsPathText, settingsModsPathBtn, "modPath", Parameter.ParameterType.CLIENT, new Callback.JFileSelectCallback() {
+        initFolderChooser(settingsModsPathText, settingsModsPathBtn, Parameters.MOD_PATH.toStringParameter(), new Callback.JFileSelectCallback() {
             @Override
             public boolean allowSelection(File path) {
                 String sPath = path.getAbsolutePath();
@@ -723,39 +721,39 @@ public class LauncherGUI implements Observer {
 
         // -------------------------------- COMBO BOXES --------------------------------
 
-        initComboBox(settingsLanguageCombo, "language", Parameter.ParameterType.CLIENT, new String[]{"system", "en_US", "de_DE"});
-        initComboBox(settingsBehaviorStartCombo, "behaviourAfterStart", Parameter.ParameterType.CLIENT, new String[]{"nothing", "minimize", "exit"});
+        initComboBox(settingsLanguageCombo, Parameters.LANGUAGE.toStringParameter());
+        initComboBox(settingsBehaviorStartCombo, Parameters.BEHAVIOUR_AFTER_START.toStringParameter());
 
-        initComboBox(settingsProfileCombo, "Profile", Parameter.ParameterType.ARMA, directories);
-        initComboBox(settingsExThreadsCombo, "ExThreads", Parameter.ParameterType.ARMA, new String[]{"", "3", "7"});
-        initComboBox(settingsMallocCombo, "Malloc", Parameter.ParameterType.ARMA, new String[]{"", "tbb4malloc_bi", "jemalloc_bi", "system"});
+        initComboBox(settingsProfileCombo, Parameters.PROFILE.toStringParameter(directories));
+        initComboBox(settingsExThreadsCombo, Parameters.EXTRA_THREADS.toStringParameter());
+        initComboBox(settingsMallocCombo, Parameters.MALLOC.toStringParameter());
 
 
         // -------------------------------- CHECK BOXES --------------------------------
 
-        initCheckBox(settingsShowParameterBox, "ShowStartParameter", Parameter.ParameterType.CLIENT);
+        initCheckBox(settingsShowParameterBox, Parameters.SHOW_START_PARAMETER.toBooolParameter());
         settingsShowParameterBox.addItemListener(e -> parameterText.setVisible(e.getStateChange() == ItemEvent.SELECTED));
-        initCheckBox(settingsCheckModsBox, "CheckModset", Parameter.ParameterType.CLIENT);
+        initCheckBox(settingsCheckModsBox, Parameters.CHECK_MODSET.toBooolParameter());
 
-        initCheckBox(settingsUseWorkshopBox, "UseWorkshop", Parameter.ParameterType.CLIENT);
+        initCheckBox(settingsUseWorkshopBox, Parameters.USE_WORKSHOP.toBooolParameter());
         settingsUseWorkshopBox.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
                 SwingUtilities.invokeLater(() -> warnBox(LangUtils.getInstance().getString("warning_workshop"), LangUtils.getInstance().getString("warning")));
             }
         });
 
-        initCheckBox(settingsUseSixtyFourBitBox, "Use64BitClient", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsNoSplashBox, "NoSplash", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsSkipIntroBox, "SkipIntro", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsNoCBBox, "NoCB", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsNoLogsBox, "NoLogs", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsEnableHTBox, "EnableHT", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsHugeoagesBox, "Hugepages", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsNoPauseBox, "NoPause", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsShowScriptErrorsBox, "ShowScriptErrors", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsFilePatchingBox, "FilePatching", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsCrashDiagBox, "CrashDiag", Parameter.ParameterType.ARMA);
-        initCheckBox(settingsWindowBox, "Window", Parameter.ParameterType.ARMA);
+        initCheckBox(settingsUseSixtyFourBitBox, Parameters.USE_64_BIT_CLIENT.toBooolParameter());
+        initCheckBox(settingsNoSplashBox, Parameters.NO_SPLASH.toBooolParameter());
+        initCheckBox(settingsSkipIntroBox, Parameters.SKIP_INTRO.toBooolParameter());
+        initCheckBox(settingsNoCBBox, Parameters.NO_CB.toBooolParameter());
+        initCheckBox(settingsNoLogsBox, Parameters.NO_LOGS.toBooolParameter());
+        initCheckBox(settingsEnableHTBox, Parameters.ENABLE_HT.toBooolParameter());
+        initCheckBox(settingsHugeoagesBox, Parameters.HUGEPAGES.toBooolParameter());
+        initCheckBox(settingsNoPauseBox, Parameters.NO_PAUSE.toBooolParameter());
+        initCheckBox(settingsShowScriptErrorsBox, Parameters.SHOW_SCRIPT_ERRORS.toBooolParameter());
+        initCheckBox(settingsFilePatchingBox, Parameters.FILE_PATCHING.toBooolParameter());
+        initCheckBox(settingsCrashDiagBox, Parameters.CRASH_DIAG.toBooolParameter());
+        initCheckBox(settingsWindowBox, Parameters.WINDOW.toBooolParameter());
 
 
         // -------------------------------- SPINNER --------------------------------
@@ -763,37 +761,32 @@ public class LauncherGUI implements Observer {
         OperatingSystemMXBean mxbean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         int memorySize = (int) (mxbean.getTotalPhysicalMemorySize() / 1024);
 
-        initSpinner(settingsMaxMemSpinner, "MaxMem", Parameter.ParameterType.ARMA, -1, memorySize);
-        initSpinner(settingsMaxVRamSpinner, "MaxVRAM", Parameter.ParameterType.ARMA, -1, 99999);
-        initSpinner(settingsCpuCountSpinner, "CpuCount", Parameter.ParameterType.ARMA, 0, Runtime.getRuntime().availableProcessors());
-        initSpinner(settingsPosXSpinner, "PosX", Parameter.ParameterType.ARMA, -1, 99999);
-        initSpinner(settingsPosYSpinner, "PosY", Parameter.ParameterType.ARMA, -1, 99999);
+        initSpinner(settingsMaxMemSpinner, Parameters.MAX_MEM.toStringParameter(), -1, memorySize);
+        initSpinner(settingsMaxVRamSpinner, Parameters.MAX_VRAM.toStringParameter(), -1, 99999);
+        initSpinner(settingsCpuCountSpinner, Parameters.CPU_COUNT.toStringParameter(), 0, Runtime.getRuntime().availableProcessors());
+        initSpinner(settingsPosXSpinner, Parameters.POS_X.toStringParameter(), -1, 99999);
+        initSpinner(settingsPosYSpinner, Parameters.POS_Y.toStringParameter(), -1, 99999);
 
         // -------------------------------- -------------------------------- --------------------------------
     }
 
-    private void initCheckBox(JCheckBox cb, String parameter, Parameter.ParameterType pType) {
-        Parameter<Boolean> paraObj = new Parameter<>(parameter, pType, Boolean.class);
+    private void initCheckBox(JCheckBox cb, Parameter<Boolean> paraObj) {
         cb.setSelected(paraObj.getValue());
         cb.addItemListener(new SettingsHandler.CheckBoxListener(paraObj));
     }
 
-    private void initComboBox(JComboBox<String> cb, String parameter, Parameter.ParameterType pType, String[] values) {
-        Parameter<String> paraObj = new Parameter<>(parameter, pType, String.class, values);
+    private void initComboBox(JComboBox<String> cb, Parameter<String> paraObj) {
         cb.setSelectedIndex(paraObj.getIndex());
         if (cb.getItemListeners().length == 1) cb.addItemListener(new SettingsHandler.ComboBoxListener(paraObj));
     }
 
-    private void initFolderChooser(JTextField showText, JButton actionButton, String parameter, Parameter.ParameterType pType, Callback.JFileSelectCallback check) {
-        Parameter<String> paraObj = new Parameter<>(parameter, pType, String.class);
+    private void initFolderChooser(JTextField showText, JButton actionButton, Parameter<String> paraObj, Callback.JFileSelectCallback check) {
         showText.setText(paraObj.getValue());
         if (actionButton.getActionListeners().length == 0)
             actionButton.addActionListener(new SettingsHandler.Fileistener(mainPanel, paraObj, check));
     }
 
-    public void initSpinner(JSpinner spinner, String parameter, Parameter.ParameterType pType, int min, int max) {
-        Parameter<String> paraObj = new Parameter<>(parameter, pType, String.class);
-
+    public void initSpinner(JSpinner spinner, Parameter<String> paraObj, int min, int max) {
         SpinnerNumberModel RAMModel = new SpinnerNumberModel(Integer.parseInt(paraObj.getValue()), min, max, 1);
         spinner.setModel(RAMModel);
         JComponent comp = spinner.getEditor();

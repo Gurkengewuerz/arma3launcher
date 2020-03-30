@@ -1,7 +1,6 @@
 package de.mc8051.arma3launcher.steam;
 
-import de.mc8051.arma3launcher.LauncherGUI;
-import de.mc8051.arma3launcher.SteamUtils;
+import de.mc8051.arma3launcher.utils.SteamUtils;
 import de.mc8051.arma3launcher.interfaces.Observer;
 import de.ralleytn.simple.registry.Key;
 import de.ralleytn.simple.registry.Registry;
@@ -48,7 +47,10 @@ public class SteamTimer extends TimerTask {
 
             steam_running = true;
 
-            arma_running = SteamUtils.findProcess("arma3.exe") || SteamUtils.findProcess("arma3_x64.exe") || SteamUtils.findProcess("arma3launcher.exe");
+            arma_running = SteamUtils.findProcess("arma3.exe")
+                    || SteamUtils.findProcess("arma3_x64.exe")
+                    || SteamUtils.findProcess("arma3battleye.exe")
+                    || SteamUtils.findProcess("arma3launcher.exe");
 
             if(old_steamrunning != steam_running || old_arma_running != arma_running) notifyObservers("steamtimer");
         } catch (IOException e) {

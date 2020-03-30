@@ -13,47 +13,26 @@ import java.util.logging.Logger;
  */
 public class Parameter<T> {
 
-    private static Map<String, String> PARAMETERS = new HashMap<String, String>() {{
-        put("profile", "name");
-        put("nosplash", "noSplash");
-        put("skipintro", "skipIntro");
-        put("world", "world");
-        put("maxmem", "maxMem");
-        put("maxvram", "maxVRAM");
-        put("nocb", "noCB");
-        put("cpucount", "cpuCount");
-        put("exthreads", "exThreads");
-        put("malloc", "malloc");
-        put("nologs", "noLogs");
-        put("enableht", "enableHT");
-        put("hugepages", "hugepages");
-        put("nopause", "noPause");
-        put("showscripterrors", "showScriptErrors");
-        put("filepatching", "filePatching");
-        put("init", "init");
-        put("beta", "beta");
-        put("crashdiag", "crashDiag");
-        put("window", "window");
-        put("posx", "posX");
-        put("posy", "posY");
-
-        // use64bitclient -> arma3_x64.exe
-    }};
-
     private String name;
     private ParameterType pType;
     private Class<T> persistentClass;
     private String[] values = null;
+    private String startParameter = "";
 
     public Parameter(String name, ParameterType pType, Class<T> persistentClass) {
-        this(name, pType, persistentClass, null);
+        this(name, pType, persistentClass, null, "");
     }
 
-    public Parameter(String name, ParameterType pType, Class<T> persistentClass, String[] values) {
+    public Parameter(String name, ParameterType pType, Class<T> persistentClass, String startParameter) {
+        this(name, pType, persistentClass, null, startParameter);
+    }
+
+    public Parameter(String name, ParameterType pType, Class<T> persistentClass, String[] values, String startParameter) {
         this.name = name;
         this.pType = pType;
         this.persistentClass = persistentClass;
         this.values = values;
+        this.startParameter = startParameter;
     }
 
     public String getName() {
@@ -100,11 +79,11 @@ public class Parameter<T> {
     }
 
     public String getParameter() {
-        if(!PARAMETERS.containsKey(name.toLowerCase())) return null;
-        return PARAMETERS.get(name.toLowerCase());
+        if(startParameter.isEmpty()) return null;
+        return startParameter;
     }
 
-    public T getValue() {
+    public T getConfigValue() {
         // Get User Value else Default else null
         Ini.Section section = ArmA3Launcher.user_config.get(getUserConfigSectionName());
         if (section != null) {
@@ -117,6 +96,12 @@ public class Parameter<T> {
             }
         }
 
+        return null;
+    }
+
+    public T getValue() {
+        final T configValue = getConfigValue();
+        if(configValue != null) return configValue;
         return getDefault();
     }
 
@@ -135,6 +120,10 @@ public class Parameter<T> {
         } else if (persistentClass.getTypeName().equals("java.lang.String"))
             return (T) ArmA3Launcher.config.getString(getUserConfigSectionName()+ "." + name);
         else return null;
+    }
+
+    public String getStartParameter() {
+        return startParameter;
     }
 
     enum ParameterType {
