@@ -1,4 +1,4 @@
-package de.mc8051.arma3launcher.repo;
+package de.mc8051.arma3launcher.repo.sync;
 
 import de.mc8051.arma3launcher.objects.AbstractMod;
 import de.mc8051.arma3launcher.objects.Mod;
@@ -6,7 +6,6 @@ import de.mc8051.arma3launcher.objects.ModFile;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**

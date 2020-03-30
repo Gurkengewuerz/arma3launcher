@@ -1,8 +1,7 @@
-package de.mc8051.arma3launcher.repo;
+package de.mc8051.arma3launcher.repo.sync;
 
 import co.bitshfted.xapps.zsync.Zsync;
 import co.bitshfted.xapps.zsync.ZsyncException;
-import co.bitshfted.xapps.zsync.ZsyncStatsObserver;
 import co.bitshfted.xapps.zsync.http.ContentRange;
 import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.LauncherGUI;

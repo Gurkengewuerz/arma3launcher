@@ -1,4 +1,4 @@
-package de.mc8051.arma3launcher.repo;
+package de.mc8051.arma3launcher.repo.sync;
 
 import co.bitshfted.xapps.zsync.Zsync;
 import co.bitshfted.xapps.zsync.ZsyncStatsObserver;

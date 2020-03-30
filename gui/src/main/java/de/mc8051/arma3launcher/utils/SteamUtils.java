@@ -1,4 +1,4 @@
-package de.mc8051.arma3launcher;
+package de.mc8051.arma3launcher.utils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
