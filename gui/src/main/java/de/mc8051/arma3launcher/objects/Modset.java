@@ -1,12 +1,16 @@
 package de.mc8051.arma3launcher.objects;
 
 import de.mc8051.arma3launcher.ArmA3Launcher;
+import de.mc8051.arma3launcher.Parameter;
+import de.mc8051.arma3launcher.Parameters;
 import org.ini4j.Ini;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
@@ -108,8 +112,10 @@ public class Modset implements Comparable {
         return type;
     }
 
-    public void play() {
-        // TODO: Implement play with this Modset
+    public List<String> getStartParamter() {
+        return mods.stream()
+                .map(m -> new File((String) Parameters.MOD_PATH.toParameter().getValue(), m.getName()).getAbsolutePath())
+                .collect(Collectors.toList());
     }
 
     public Modset clone(String newName, Type newType) {

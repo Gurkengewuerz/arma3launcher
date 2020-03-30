@@ -29,6 +29,7 @@ public class PresetTableModel extends AbstractListModel  {
 
     @Override
     public Object getElementAt(int index) {
+        if(index == -1) return null;
         return data.get(index);
     }
 }

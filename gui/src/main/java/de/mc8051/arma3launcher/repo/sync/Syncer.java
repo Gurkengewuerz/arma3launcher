@@ -98,8 +98,8 @@ public class Syncer implements Observable, SyncListener {
             TaskBarUtils.getInstance().normal();
         });
 
-        final Parameter<Boolean> workshopParameter = Parameters.USE_WORKSHOP.toBooolParameter();
-        if(workshopParameter.getValue() != null && workshopParameter.getValue()) workshopFiles = WorkshopUtil.workshopFiles();
+        final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
+        if(workshopParameter.getValue() != null && (Boolean) workshopParameter.getValue()) workshopFiles = WorkshopUtil.workshopFiles();
 
         boolean lastPause = false;
         while (running) {

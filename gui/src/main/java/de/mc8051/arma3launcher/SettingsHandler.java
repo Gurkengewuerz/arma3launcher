@@ -18,9 +18,9 @@ import java.io.File;
 public class SettingsHandler {
 
     public static class CheckBoxListener implements ItemListener {
-        private Parameter<Boolean> parameter;
+        private Parameter parameter;
 
-        public CheckBoxListener(Parameter<Boolean> parameter) {
+        public CheckBoxListener(Parameter parameter) {
             this.parameter = parameter;
         }
 
@@ -32,9 +32,9 @@ public class SettingsHandler {
 
     public static class ComboBoxListener implements ItemListener {
 
-        private Parameter<String> parameter;
+        private Parameter parameter;
 
-        public ComboBoxListener(Parameter<String> parameter) {
+        public ComboBoxListener(Parameter parameter) {
             this.parameter = parameter;
         }
 
@@ -50,10 +50,10 @@ public class SettingsHandler {
     public static class Fileistener implements ActionListener {
 
         private JPanel parent;
-        private Parameter<String> parameter;
+        private Parameter parameter;
         private Callback.JFileSelectCallback check;
 
-        public Fileistener(JPanel parent, Parameter<String> parameter, Callback.JFileSelectCallback check) {
+        public Fileistener(JPanel parent, Parameter parameter, Callback.JFileSelectCallback check) {
             this.parent = parent;
             this.parameter = parameter;
             this.check = check;
@@ -82,9 +82,9 @@ public class SettingsHandler {
     public static class SpinnerListener implements ChangeListener {
 
         private static long lastChange = -1;
-        private Parameter<String> parameter;
+        private Parameter parameter;
 
-        public SpinnerListener(Parameter<String> parameter) {
+        public SpinnerListener(Parameter parameter) {
             this.parameter = parameter;
         }
 

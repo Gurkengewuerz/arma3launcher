@@ -201,11 +201,11 @@ public class LauncherGUI implements Observer {
         fileChecker.addObserver(this);
         syncer.addObserver(this);
 
-        if (Parameters.ARMA_PATH.toStringParameter().getConfigValue() == null || Parameters.ARMA_PATH.toStringParameter().getConfigValue().isEmpty()) {
+        if (Parameters.ARMA_PATH.toParameter().getConfigValue() == null || ((String) Parameters.ARMA_PATH.toParameter().getConfigValue()).isEmpty()) {
             final Path installationPath = ArmaUtils.getInstallationPath();
             if (installationPath != null) {
-                Parameters.ARMA_PATH.toStringParameter().save(installationPath.toAbsolutePath().toString());
-                Parameters.MOD_PATH.toStringParameter().save(Paths.get(
+                Parameters.ARMA_PATH.toParameter().save(installationPath.toAbsolutePath().toString());
+                Parameters.MOD_PATH.toParameter().save(Paths.get(
                         installationPath.toAbsolutePath().toString(), ArmA3Launcher.config.getString("name") + " Mods"
                 ).toAbsolutePath().toString());
                 techCheck();
@@ -250,7 +250,8 @@ public class LauncherGUI implements Observer {
 
         playPresetButton.setMargin(new Insets(10, 10, 10, 10));
 
-        serverTable.setModel(new ServerTableModel());
+        final ServerTableModel serverTableModel = new ServerTableModel();
+        serverTable.setModel(serverTableModel);
         presetList.setModel(new PresetTableModel());
 
         presetList.setCellRenderer(new PresetListRenderer());
@@ -301,11 +302,41 @@ public class LauncherGUI implements Observer {
         updateTreeScrolPane.getVerticalScrollBar().setUnitIncrement(16);
         splitView.setDividerLocation(-1);
 
+        ListSelectionModel selectionModel = serverTable.getSelectionModel();
+        selectionModel.addListSelectionListener(e -> {
+            if (serverTable.getSelectedRow() == -1) {
+                playButton.setEnabled(false);
+                parameterText.setText("");
+                return;
+            }
+            ServerTableModel m = (ServerTableModel) serverTable.getModel();
+            Server server = m.getServer(serverTable.getSelectedRow());
+
+            parameterText.setText(ArmaUtils.getGameParameter(server.getPreset()));
+            techCheck();
+        });
+
+        playButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (serverTable.getSelectedRow() == -1) {
+                    playButton.setEnabled(false);
+                    parameterText.setText("");
+                    return;
+                }
+                ServerTableModel m = (ServerTableModel) serverTable.getModel();
+                Server server = m.getServer(serverTable.getSelectedRow());
+
+                ArmaUtils.start(server.getPreset(), server.getStartparameter().stream().toArray(String[]::new));
+            }
+        });
+
         presetList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 PresetTableModel m = (PresetTableModel) presetList.getModel();
                 Object elementAt = m.getElementAt(presetList.getSelectedIndex());
                 Modset modset = (Modset) elementAt;
+                if (modset == null) return;
 
                 if (modset.getType() == Modset.Type.SERVER || modset.getType() == Modset.Type.PLACEHOLDER) {
                     renamePresetButton.setEnabled(false);
@@ -315,8 +346,34 @@ public class LauncherGUI implements Observer {
                     removePresetButtom.setEnabled(true);
                 }
                 clonePresetButton.setEnabled(modset.getType() != Modset.Type.PLACEHOLDER);
+                if (modset.getType() == Modset.Type.PLACEHOLDER) {
+                    modList.setModel(new DefaultListModel<String>());
+                    presetNotePane.setVisible(false);
+                    presetList.clearSelection();
+                }
 
                 updateModList(modset);
+                techCheck();
+            }
+        });
+
+        playPresetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (presetList.getSelectedIndex() == -1) {
+                    playPresetButton.setEnabled(false);
+                    parameterText.setText("");
+                    return;
+                }
+
+                PresetTableModel model1 = (PresetTableModel) presetList.getModel();
+                if (presetList.getSelectedIndex() == -1) return;
+                Object elementAt = model1.getElementAt(presetList.getSelectedIndex());
+                Modset selectedModset = (Modset) elementAt;
+
+                if(selectedModset.getType() == Modset.Type.PLACEHOLDER) return;
+
+                ArmaUtils.start(selectedModset);
             }
         });
 
@@ -598,10 +655,12 @@ public class LauncherGUI implements Observer {
     }
 
     public void techCheck() {
-        boolean pathSet = Parameters.ARMA_PATH.toStringParameter().getConfigValue() != null && Parameters.ARMA_PATH.toStringParameter().getConfigValue() != null;
+        boolean pathSet = Parameters.ARMA_PATH.toParameter().getConfigValue() != null && Parameters.ARMA_PATH.toParameter().getConfigValue() != null;
+
+        playButton.setEnabled(false);
+        playPresetButton.setEnabled(false);
+
         if (SteamTimer.arma_running) {
-            playButton.setEnabled(false);
-            playPresetButton.setEnabled(false);
             syncIntensiveCheckButton.setEnabled(false);
             syncFastCheckButton.setEnabled(false);
             refreshRepoButton.setEnabled(false);
@@ -614,22 +673,20 @@ public class LauncherGUI implements Observer {
         } else {
             if (SteamTimer.steam_running) {
                 if (pathSet) {
-                    playButton.setEnabled(true);
-                    playPresetButton.setEnabled(true);
+                    if (serverTable.getSelectedRow() != -1) {
+                        playButton.setEnabled(true);
+                        playButton.setToolTipText(null);
+                    }
 
-                    playButton.setToolTipText(null);
-                    playPresetButton.setToolTipText(null);
+                    if (presetList.getSelectedIndex() != -1) {
+                        playPresetButton.setEnabled(true);
+                        playPresetButton.setToolTipText(null);
+                    }
                 } else {
-                    playButton.setEnabled(false);
-                    playPresetButton.setEnabled(false);
-
                     playButton.setToolTipText(LangUtils.getInstance().getString("path_not_set"));
                     playPresetButton.setToolTipText(LangUtils.getInstance().getString("path_not_set"));
                 }
             } else {
-                playButton.setEnabled(false);
-                playPresetButton.setEnabled(false);
-
                 playButton.setToolTipText(LangUtils.getInstance().getString("steam_not_running"));
                 playPresetButton.setToolTipText(LangUtils.getInstance().getString("steam_not_running"));
             }
@@ -673,7 +730,7 @@ public class LauncherGUI implements Observer {
         for (int i = 0; i < directories.length; i++) {
             try {
                 readableDirectories[i] = URLDecoder.decode(directories[i], StandardCharsets.UTF_8.name());
-            } catch (UnsupportedEncodingException e) {
+            } catch (UnsupportedEncodingException | IllegalArgumentException e) {
                 readableDirectories[i] = directories[i];
             }
         }
@@ -681,7 +738,7 @@ public class LauncherGUI implements Observer {
         ((JComboBox<String>) settingsProfileCombo).setModel(new DefaultComboBoxModel<>(readableDirectories));
 
 
-        initFolderChooser(settingsArmaPathText, settingsArmaPathBtn, Parameters.ARMA_PATH.toStringParameter(), new Callback.JFileSelectCallback() {
+        initFolderChooser(settingsArmaPathText, settingsArmaPathBtn, Parameters.ARMA_PATH.toParameter(), new Callback.JFileSelectCallback() {
             @Override
             public boolean allowSelection(File path) {
                 String sPath = path.getAbsolutePath();
@@ -702,7 +759,7 @@ public class LauncherGUI implements Observer {
             }
         });
 
-        initFolderChooser(settingsModsPathText, settingsModsPathBtn, Parameters.MOD_PATH.toStringParameter(), new Callback.JFileSelectCallback() {
+        initFolderChooser(settingsModsPathText, settingsModsPathBtn, Parameters.MOD_PATH.toParameter(), new Callback.JFileSelectCallback() {
             @Override
             public boolean allowSelection(File path) {
                 String sPath = path.getAbsolutePath();
@@ -721,39 +778,39 @@ public class LauncherGUI implements Observer {
 
         // -------------------------------- COMBO BOXES --------------------------------
 
-        initComboBox(settingsLanguageCombo, Parameters.LANGUAGE.toStringParameter());
-        initComboBox(settingsBehaviorStartCombo, Parameters.BEHAVIOUR_AFTER_START.toStringParameter());
+        initComboBox(settingsLanguageCombo, Parameters.LANGUAGE.toParameter());
+        initComboBox(settingsBehaviorStartCombo, Parameters.BEHAVIOUR_AFTER_START.toParameter());
 
-        initComboBox(settingsProfileCombo, Parameters.PROFILE.toStringParameter(directories));
-        initComboBox(settingsExThreadsCombo, Parameters.EXTRA_THREADS.toStringParameter());
-        initComboBox(settingsMallocCombo, Parameters.MALLOC.toStringParameter());
+        initComboBox(settingsProfileCombo, Parameters.PROFILE.toParameter(readableDirectories));
+        initComboBox(settingsExThreadsCombo, Parameters.EXTRA_THREADS.toParameter());
+        initComboBox(settingsMallocCombo, Parameters.MALLOC.toParameter());
 
 
         // -------------------------------- CHECK BOXES --------------------------------
 
-        initCheckBox(settingsShowParameterBox, Parameters.SHOW_START_PARAMETER.toBooolParameter());
+        initCheckBox(settingsShowParameterBox, Parameters.SHOW_START_PARAMETER.toParameter());
         settingsShowParameterBox.addItemListener(e -> parameterText.setVisible(e.getStateChange() == ItemEvent.SELECTED));
-        initCheckBox(settingsCheckModsBox, Parameters.CHECK_MODSET.toBooolParameter());
+        initCheckBox(settingsCheckModsBox, Parameters.CHECK_MODSET.toParameter());
 
-        initCheckBox(settingsUseWorkshopBox, Parameters.USE_WORKSHOP.toBooolParameter());
+        initCheckBox(settingsUseWorkshopBox, Parameters.USE_WORKSHOP.toParameter());
         settingsUseWorkshopBox.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
                 SwingUtilities.invokeLater(() -> warnBox(LangUtils.getInstance().getString("warning_workshop"), LangUtils.getInstance().getString("warning")));
             }
         });
 
-        initCheckBox(settingsUseSixtyFourBitBox, Parameters.USE_64_BIT_CLIENT.toBooolParameter());
-        initCheckBox(settingsNoSplashBox, Parameters.NO_SPLASH.toBooolParameter());
-        initCheckBox(settingsSkipIntroBox, Parameters.SKIP_INTRO.toBooolParameter());
-        initCheckBox(settingsNoCBBox, Parameters.NO_CB.toBooolParameter());
-        initCheckBox(settingsNoLogsBox, Parameters.NO_LOGS.toBooolParameter());
-        initCheckBox(settingsEnableHTBox, Parameters.ENABLE_HT.toBooolParameter());
-        initCheckBox(settingsHugeoagesBox, Parameters.HUGEPAGES.toBooolParameter());
-        initCheckBox(settingsNoPauseBox, Parameters.NO_PAUSE.toBooolParameter());
-        initCheckBox(settingsShowScriptErrorsBox, Parameters.SHOW_SCRIPT_ERRORS.toBooolParameter());
-        initCheckBox(settingsFilePatchingBox, Parameters.FILE_PATCHING.toBooolParameter());
-        initCheckBox(settingsCrashDiagBox, Parameters.CRASH_DIAG.toBooolParameter());
-        initCheckBox(settingsWindowBox, Parameters.WINDOW.toBooolParameter());
+        initCheckBox(settingsUseSixtyFourBitBox, Parameters.USE_64_BIT_CLIENT.toParameter());
+        initCheckBox(settingsNoSplashBox, Parameters.NO_SPLASH.toParameter());
+        initCheckBox(settingsSkipIntroBox, Parameters.SKIP_INTRO.toParameter());
+        initCheckBox(settingsNoCBBox, Parameters.NO_CB.toParameter());
+        initCheckBox(settingsNoLogsBox, Parameters.NO_LOGS.toParameter());
+        initCheckBox(settingsEnableHTBox, Parameters.ENABLE_HT.toParameter());
+        initCheckBox(settingsHugeoagesBox, Parameters.HUGEPAGES.toParameter());
+        initCheckBox(settingsNoPauseBox, Parameters.NO_PAUSE.toParameter());
+        initCheckBox(settingsShowScriptErrorsBox, Parameters.SHOW_SCRIPT_ERRORS.toParameter());
+        initCheckBox(settingsFilePatchingBox, Parameters.FILE_PATCHING.toParameter());
+        initCheckBox(settingsCrashDiagBox, Parameters.CRASH_DIAG.toParameter());
+        initCheckBox(settingsWindowBox, Parameters.WINDOW.toParameter());
 
 
         // -------------------------------- SPINNER --------------------------------
@@ -761,33 +818,33 @@ public class LauncherGUI implements Observer {
         OperatingSystemMXBean mxbean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
         int memorySize = (int) (mxbean.getTotalPhysicalMemorySize() / 1024);
 
-        initSpinner(settingsMaxMemSpinner, Parameters.MAX_MEM.toStringParameter(), -1, memorySize);
-        initSpinner(settingsMaxVRamSpinner, Parameters.MAX_VRAM.toStringParameter(), -1, 99999);
-        initSpinner(settingsCpuCountSpinner, Parameters.CPU_COUNT.toStringParameter(), 0, Runtime.getRuntime().availableProcessors());
-        initSpinner(settingsPosXSpinner, Parameters.POS_X.toStringParameter(), -1, 99999);
-        initSpinner(settingsPosYSpinner, Parameters.POS_Y.toStringParameter(), -1, 99999);
+        initSpinner(settingsMaxMemSpinner, Parameters.MAX_MEM.toParameter(), -1, memorySize);
+        initSpinner(settingsMaxVRamSpinner, Parameters.MAX_VRAM.toParameter(), -1, 99999);
+        initSpinner(settingsCpuCountSpinner, Parameters.CPU_COUNT.toParameter(), 0, Runtime.getRuntime().availableProcessors());
+        initSpinner(settingsPosXSpinner, Parameters.POS_X.toParameter(), -1, 99999);
+        initSpinner(settingsPosYSpinner, Parameters.POS_Y.toParameter(), -1, 99999);
 
         // -------------------------------- -------------------------------- --------------------------------
     }
 
-    private void initCheckBox(JCheckBox cb, Parameter<Boolean> paraObj) {
-        cb.setSelected(paraObj.getValue());
+    private void initCheckBox(JCheckBox cb, Parameter paraObj) {
+        cb.setSelected((Boolean) paraObj.getValue());
         cb.addItemListener(new SettingsHandler.CheckBoxListener(paraObj));
     }
 
-    private void initComboBox(JComboBox<String> cb, Parameter<String> paraObj) {
+    private void initComboBox(JComboBox<String> cb, Parameter paraObj) {
         cb.setSelectedIndex(paraObj.getIndex());
         if (cb.getItemListeners().length == 1) cb.addItemListener(new SettingsHandler.ComboBoxListener(paraObj));
     }
 
-    private void initFolderChooser(JTextField showText, JButton actionButton, Parameter<String> paraObj, Callback.JFileSelectCallback check) {
-        showText.setText(paraObj.getValue());
+    private void initFolderChooser(JTextField showText, JButton actionButton, Parameter paraObj, Callback.JFileSelectCallback check) {
+        showText.setText((String) paraObj.getValue());
         if (actionButton.getActionListeners().length == 0)
             actionButton.addActionListener(new SettingsHandler.Fileistener(mainPanel, paraObj, check));
     }
 
-    public void initSpinner(JSpinner spinner, Parameter<String> paraObj, int min, int max) {
-        SpinnerNumberModel RAMModel = new SpinnerNumberModel(Integer.parseInt(paraObj.getValue()), min, max, 1);
+    public void initSpinner(JSpinner spinner, Parameter paraObj, int min, int max) {
+        SpinnerNumberModel RAMModel = new SpinnerNumberModel(Integer.parseInt((String) paraObj.getValue()), min, max, 1);
         spinner.setModel(RAMModel);
         JComponent comp = spinner.getEditor();
         JFormattedTextField field = (JFormattedTextField) comp.getComponent(0);
@@ -843,6 +900,8 @@ public class LauncherGUI implements Observer {
 
         if (modset.getType() == Modset.Type.PLACEHOLDER) return;
         int[] select = new int[modset.getMods().size()];
+
+        parameterText.setText(ArmaUtils.getGameParameter(modset));
 
         AtomicInteger selectCounter = new AtomicInteger(0);
         RepositoryManger.MOD_LIST.stream()
@@ -1061,9 +1120,9 @@ public class LauncherGUI implements Observer {
                     refreshRepoButton.setEnabled(true);
                     updateRepoTree();
 
-                    final Parameter<Boolean> checkModsetParameter = Parameters.CHECK_MODSET.toBooolParameter();
-                    if(checkModsetParameter.getValue() != null && checkModsetParameter.getValue()) {
-                        if(!fileChecker.isChecked()) {
+                    final Parameter checkModsetParameter = Parameters.CHECK_MODSET.toParameter();
+                    if (checkModsetParameter.getValue() != null && (boolean) checkModsetParameter.getValue()) {
+                        if (!fileChecker.isChecked()) {
                             SwingUtilities.invokeLater(() -> fileCheck(false));
                             Logger.getLogger(getClass().getName()).log(Level.INFO, "Started file check on launch");
                         }
@@ -1130,8 +1189,8 @@ public class LauncherGUI implements Observer {
 
             lastSynclist = null;
         } else if (s.equals("syncStopped")) {
-            final Parameter<Boolean> workshopParameter = Parameters.USE_WORKSHOP.toBooolParameter();
-            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && workshopParameter.getValue()))).start();
+            final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
+            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()))).start();
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
@@ -1142,8 +1201,8 @@ public class LauncherGUI implements Observer {
                 TaskBarUtils.getInstance().off();
             });
         } else if (s.equals("syncComplete")) {
-            final Parameter<Boolean> workshopParameter = Parameters.USE_WORKSHOP.toBooolParameter();
-            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && workshopParameter.getValue()))).start();
+            final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
+            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()))).start();
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
@@ -1234,6 +1293,9 @@ public class LauncherGUI implements Observer {
         switch (tab) {
             case PLAY:
                 playPanelButton.setBackground(focusBackgroundColor);
+
+                parameterText.setText("");
+                serverTable.clearSelection();
                 break;
 
             case UPDATE:
@@ -1247,6 +1309,14 @@ public class LauncherGUI implements Observer {
 
             case PRESET:
                 presetPanelButton.setBackground(focusBackgroundColor);
+
+                presetList.clearSelection();
+                modList.setModel(new DefaultListModel<String>());
+                presetNotePane.setVisible(false);
+
+                clonePresetButton.setEnabled(false);
+                renamePresetButton.setEnabled(false);
+                removePresetButtom.setEnabled(false);
                 break;
 
             case SETTING:
@@ -1276,6 +1346,7 @@ public class LauncherGUI implements Observer {
         }
 
         tabbedPane1.setSelectedIndex(tab.getIndex());
+        techCheck();
     }
 
     {
@@ -1462,7 +1533,7 @@ public class LauncherGUI implements Observer {
         panel6.add(playButton, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         parameterText = new JTextField();
         parameterText.setEditable(false);
-        parameterText.setText("-noInit -noLogs");
+        parameterText.setText("");
         panel6.add(parameterText, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         updateTab = new JPanel();
         updateTab.setLayout(new GridLayoutManager(2, 2, new Insets(0, 0, 5, 0), -1, -1));
@@ -2042,7 +2113,9 @@ public class LauncherGUI implements Observer {
         final DefaultComboBoxModel defaultComboBoxModel2 = new DefaultComboBoxModel();
         defaultComboBoxModel2.addElement("");
         defaultComboBoxModel2.addElement("tbb4malloc_bi");
+        defaultComboBoxModel2.addElement("tbb4malloc_bi_x64");
         defaultComboBoxModel2.addElement("jemalloc_bi");
+        defaultComboBoxModel2.addElement("jemalloc_bi_x64");
         defaultComboBoxModel2.addElement("system");
         settingsMallocCombo.setModel(defaultComboBoxModel2);
         panel35.add(settingsMallocCombo, new GridConstraints(23, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));

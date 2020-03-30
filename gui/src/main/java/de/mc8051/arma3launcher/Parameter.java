@@ -11,23 +11,23 @@ import java.util.logging.Logger;
 /**
  * Created by gurkengewuerz.de on 24.03.2020.
  */
-public class Parameter<T> {
+public class Parameter {
 
     private String name;
     private ParameterType pType;
-    private Class<T> persistentClass;
+    private Class<?> persistentClass;
     private String[] values = null;
     private String startParameter = "";
 
-    public Parameter(String name, ParameterType pType, Class<T> persistentClass) {
+    public Parameter(String name, ParameterType pType, Class<?> persistentClass) {
         this(name, pType, persistentClass, null, "");
     }
 
-    public Parameter(String name, ParameterType pType, Class<T> persistentClass, String startParameter) {
+    public Parameter(String name, ParameterType pType, Class<?> persistentClass, String startParameter) {
         this(name, pType, persistentClass, null, startParameter);
     }
 
-    public Parameter(String name, ParameterType pType, Class<T> persistentClass, String[] values, String startParameter) {
+    public Parameter(String name, ParameterType pType, Class<?> persistentClass, String[] values, String startParameter) {
         this.name = name;
         this.pType = pType;
         this.persistentClass = persistentClass;
@@ -45,8 +45,8 @@ public class Parameter<T> {
         return "";
     }
 
-    public void save(T data) {
-        T def = getDefault();
+    public void save(Object data) {
+        Object def = getDefault();
 
         if (data == def || (persistentClass.getTypeName().equals("java.lang.String") && String.valueOf(data).equals(String.valueOf(def)))) {
             // remove entry from user config
@@ -75,7 +75,7 @@ public class Parameter<T> {
     public void save(int index) {
         if(values == null) throw new IllegalAccessError("call of save(int index) is only allowed for ComboBoxes");
         if(index > values.length - 1) throw new IndexOutOfBoundsException("index " + index + " is out of bound. Max: " + (values.length -1));
-        save((T) values[index]);
+        save(values[index]);
     }
 
     public String getParameter() {
@@ -83,7 +83,7 @@ public class Parameter<T> {
         return startParameter;
     }
 
-    public T getConfigValue() {
+    public Object getConfigValue() {
         // Get User Value else Default else null
         Ini.Section section = ArmA3Launcher.user_config.get(getUserConfigSectionName());
         if (section != null) {
@@ -91,16 +91,16 @@ public class Parameter<T> {
                 String val = section.get(name);
 
                 if (persistentClass.getTypeName().equals("java.lang.Boolean")) {
-                    return (T) (Boolean) Boolean.valueOf(val.toLowerCase());
-                } else return (T) val;
+                    return Boolean.valueOf(val.toLowerCase());
+                } else return val;
             }
         }
 
         return null;
     }
 
-    public T getValue() {
-        final T configValue = getConfigValue();
+    public Object getValue() {
+        final Object configValue = getConfigValue();
         if(configValue != null) return configValue;
         return getDefault();
     }
@@ -114,11 +114,11 @@ public class Parameter<T> {
         return -1;
     }
 
-    public T getDefault() {
+    public Object getDefault() {
         if (persistentClass.getTypeName().equals("java.lang.Boolean")) {
-            return (T) (Boolean) ArmA3Launcher.config.getBoolean( getUserConfigSectionName() + "." + name);
+            return ArmA3Launcher.config.getBoolean( getUserConfigSectionName() + "." + name);
         } else if (persistentClass.getTypeName().equals("java.lang.String"))
-            return (T) ArmA3Launcher.config.getString(getUserConfigSectionName()+ "." + name);
+            return ArmA3Launcher.config.getString(getUserConfigSectionName()+ "." + name);
         else return null;
     }
 
@@ -126,7 +126,7 @@ public class Parameter<T> {
         return startParameter;
     }
 
-    enum ParameterType {
+    public enum ParameterType {
         ARMA,
         CLIENT
     }

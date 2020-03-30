@@ -5,68 +5,70 @@ package de.mc8051.arma3launcher;
  */
 public enum Parameters {
 
-    LANGUAGE("language", Parameter.ParameterType.CLIENT, "", new String[]{"system", "en_US", "de_DE"}),
-    BEHAVIOUR_AFTER_START("behaviourAfterStart", Parameter.ParameterType.CLIENT, "", new String[]{"nothing", "minimize", "exit"}),
-    SHOW_START_PARAMETER("ShowStartParameter", Parameter.ParameterType.CLIENT),
-    CHECK_MODSET("CheckModset", Parameter.ParameterType.CLIENT),
-    USE_WORKSHOP("UseWorkshop", Parameter.ParameterType.CLIENT),
-    ARMA_PATH("armaPath", Parameter.ParameterType.CLIENT),
-    MOD_PATH("modPath", Parameter.ParameterType.CLIENT),
+    LANGUAGE("language", Parameter.ParameterType.CLIENT, String.class, "", new String[]{"system", "en_US", "de_DE"}),
+    BEHAVIOUR_AFTER_START("behaviourAfterStart", Parameter.ParameterType.CLIENT, String.class, "", new String[]{"nothing", "minimize", "exit"}),
+    SHOW_START_PARAMETER("ShowStartParameter", Parameter.ParameterType.CLIENT, Boolean.class),
+    CHECK_MODSET("CheckModset", Parameter.ParameterType.CLIENT, Boolean.class),
+    USE_WORKSHOP("UseWorkshop", Parameter.ParameterType.CLIENT, Boolean.class),
+    ARMA_PATH("armaPath", Parameter.ParameterType.CLIENT, String.class),
+    MOD_PATH("modPath", Parameter.ParameterType.CLIENT, String.class),
 
-    PROFILE("Profile", Parameter.ParameterType.ARMA, "name"),
-    USE_64_BIT_CLIENT("Use64BitClient", Parameter.ParameterType.ARMA, "Use64BitClient"),
-    NO_SPLASH("NoSplash", Parameter.ParameterType.ARMA, "noSplash"),
-    SKIP_INTRO("SkipIntro", Parameter.ParameterType.ARMA, "skipIntro"),
-    WORLD("World", Parameter.ParameterType.ARMA, "world"),
-    MAX_MEM("MaxMem", Parameter.ParameterType.ARMA, "maxMem"),
-    MAX_VRAM("MaxVRAM", Parameter.ParameterType.ARMA, "maxVRAM"),
-    NO_CB("NoCB", Parameter.ParameterType.ARMA, "noCB"),
-    CPU_COUNT("CpuCount", Parameter.ParameterType.ARMA, "cpuCount"),
-    EXTRA_THREADS("ExThreads", Parameter.ParameterType.ARMA, "exThreads", new String[]{"", "3", "7"}),
-    MALLOC("Malloc", Parameter.ParameterType.ARMA, "malloc", new String[]{"", "tbb4malloc_bi", "jemalloc_bi", "system"}),
-    NO_LOGS("NoLogs", Parameter.ParameterType.ARMA, "noLogs"),
-    ENABLE_HT("EnableHT", Parameter.ParameterType.ARMA, "enableHT"),
-    HUGEPAGES("Hugepages", Parameter.ParameterType.ARMA, "hugepages"),
-    NO_PAUSE("NoPause", Parameter.ParameterType.ARMA, "noPause"),
-    SHOW_SCRIPT_ERRORS("ShowScriptErrors", Parameter.ParameterType.ARMA, "showScriptErrors"),
-    FILE_PATCHING("FilePatching", Parameter.ParameterType.ARMA, "filePatching"),
-    INIT("Init", Parameter.ParameterType.ARMA, "init"),
-    BETA("Beta", Parameter.ParameterType.ARMA, "beta"),
-    CRASH_DIAG("CrashDiag", Parameter.ParameterType.ARMA, "crashDiag"),
-    WINDOW("Window", Parameter.ParameterType.ARMA, "window"),
-    POS_X("PosX", Parameter.ParameterType.ARMA, "posX"),
-    POS_Y("PosY", Parameter.ParameterType.ARMA, "posY");
+    PROFILE("Profile", Parameter.ParameterType.ARMA, String.class, "name"),
+    USE_64_BIT_CLIENT("Use64BitClient", Parameter.ParameterType.ARMA, Boolean.class),
+    NO_SPLASH("NoSplash", Parameter.ParameterType.ARMA, Boolean.class, "noSplash"),
+    SKIP_INTRO("SkipIntro", Parameter.ParameterType.ARMA, Boolean.class, "skipIntro"),
+    WORLD("World", Parameter.ParameterType.ARMA, String.class, "world"),
+    MAX_MEM("MaxMem", Parameter.ParameterType.ARMA, String.class, "maxMem"),
+    MAX_VRAM("MaxVRAM", Parameter.ParameterType.ARMA, String.class, "maxVRAM"),
+    NO_CB("NoCB", Parameter.ParameterType.ARMA, Boolean.class, "noCB"),
+    CPU_COUNT("CpuCount", Parameter.ParameterType.ARMA, String.class, "cpuCount"),
+    EXTRA_THREADS("ExThreads", Parameter.ParameterType.ARMA, String.class, "exThreads", new String[]{"", "3", "7"}),
+    MALLOC("Malloc", Parameter.ParameterType.ARMA, String.class, "malloc", new String[]{"", "tbb4malloc_bi", "tbb4malloc_bi_x64", "jemalloc_bi", "jemalloc_bi_x64", "system"}),
+    NO_LOGS("NoLogs", Parameter.ParameterType.ARMA, Boolean.class, "noLogs"),
+    ENABLE_HT("EnableHT", Parameter.ParameterType.ARMA, Boolean.class, "enableHT"),
+    HUGEPAGES("Hugepages", Parameter.ParameterType.ARMA, Boolean.class, "hugepages"),
+    NO_PAUSE("NoPause", Parameter.ParameterType.ARMA, Boolean.class, "noPause"),
+    SHOW_SCRIPT_ERRORS("ShowScriptErrors", Parameter.ParameterType.ARMA, Boolean.class, "showScriptErrors"),
+    FILE_PATCHING("FilePatching", Parameter.ParameterType.ARMA, Boolean.class, "filePatching"),
+    INIT("Init", Parameter.ParameterType.ARMA, String.class, "init"),
+    BETA("Beta", Parameter.ParameterType.ARMA, String.class, "beta"),
+    CRASH_DIAG("CrashDiag", Parameter.ParameterType.ARMA, Boolean.class, "crashDiag"),
+    WINDOW("Window", Parameter.ParameterType.ARMA, Boolean.class, "window"),
+    POS_X("PosX", Parameter.ParameterType.ARMA, String.class, "posX"),
+    POS_Y("PosY", Parameter.ParameterType.ARMA, String.class, "posY");
 
     private String name;
     private Parameter.ParameterType type;
     private String[] values;
     private String startParameter;
+    private Class<?> clazz;
 
-    Parameters(String name, Parameter.ParameterType type) {
-        this(name, type, "");
+    Parameters(String name, Parameter.ParameterType type, Class<?> clazz) {
+        this(name, type, clazz, "");
     }
 
-    Parameters(String name, Parameter.ParameterType type, String startParameter) {
-        this(name, type, startParameter, null);
+    Parameters(String name, Parameter.ParameterType type, Class<?> clazz, String startParameter) {
+        this(name, type, clazz, startParameter, null);
     }
 
-    Parameters(String name, Parameter.ParameterType type, String startParameter, String[] values) {
+    Parameters(String name, Parameter.ParameterType type, Class<?> clazz, String startParameter, String[] values) {
         this.name = name;
         this.type = type;
         this.startParameter = startParameter;
-        this. values = values;
+        this.values = values;
+        this.clazz = clazz;
     }
 
-    public Parameter<String> toStringParameter() {
-        return new Parameter<String>(name, type, String.class, values, startParameter);
+    public Parameter toParameter() {
+        return new Parameter(name, type, clazz, values, startParameter);
     }
 
-    public Parameter<String> toStringParameter(String... values) {
-        return new Parameter<String>(name, type, String.class, values, startParameter);
+    public Parameter toParameter(String... values) {
+        return new Parameter(name, type, clazz, values, startParameter);
     }
 
-    public Parameter<Boolean> toBooolParameter() {
-        return new Parameter<>(name, type, Boolean.class);
+    public Class<?> getClazz() {
+        return clazz;
     }
 
     public String getName() {

@@ -338,7 +338,7 @@
                             </constraints>
                             <properties>
                               <editable value="false"/>
-                              <text value="-noInit -noLogs"/>
+                              <text value=""/>
                             </properties>
                           </component>
                         </children>
@@ -1784,7 +1784,9 @@
                                   <model>
                                     <item value=""/>
                                     <item value="tbb4malloc_bi"/>
+                                    <item value="tbb4malloc_bi_x64"/>
                                     <item value="jemalloc_bi"/>
+                                    <item value="jemalloc_bi_x64"/>
                                     <item value="system"/>
                                   </model>
                                 </properties>

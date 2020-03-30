@@ -18,7 +18,7 @@ public class WorkshopUtil {
     public static Map<Path, Long> workshopFiles() {
         Map<Path, Long> fileMap = new HashMap<>();
 
-        final String armaPath = Parameters.ARMA_PATH.toStringParameter().getValue();
+        final String armaPath = (String) Parameters.ARMA_PATH.toParameter().getValue();
         if(armaPath == null) return fileMap;
 
         final Path workshopPath = Paths.get(armaPath, "!Workshop");

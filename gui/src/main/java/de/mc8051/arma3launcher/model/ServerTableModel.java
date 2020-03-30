@@ -39,6 +39,10 @@ public class ServerTableModel extends AbstractTableModel {
         return columnNames.length;
     }
 
+    public Server getServer(int row) {
+        return data.get(row);
+    }
+
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         if (columnIndex == 0) return data.get(rowIndex).getName();
