@@ -5,6 +5,8 @@ import co.bitshfted.xapps.zsync.ZsyncException;
 import co.bitshfted.xapps.zsync.http.ContentRange;
 import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.LauncherGUI;
+import de.mc8051.arma3launcher.Parameter;
+import de.mc8051.arma3launcher.Parameters;
 import de.mc8051.arma3launcher.interfaces.Observable;
 import de.mc8051.arma3launcher.interfaces.Observer;
 import de.mc8051.arma3launcher.objects.AbstractMod;
@@ -13,15 +15,21 @@ import de.mc8051.arma3launcher.utils.Humanize;
 import de.mc8051.arma3launcher.utils.TaskBarUtils;
 
 import javax.swing.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * Created by gurkengewuerz.de on 25.03.2020.
@@ -58,6 +66,8 @@ public class Syncer implements Observable, SyncListener {
     private Zsync zsync;
     private LauncherGUI gui;
 
+    private Map<Path, Long> workshopFiles = new HashMap<>();
+
     public Syncer(LauncherGUI gui) {
         zsync = new Zsync();
         this.gui = gui;
@@ -87,6 +97,9 @@ public class Syncer implements Observable, SyncListener {
             gui.syncDownloadProgress.setValue(0);
             TaskBarUtils.getInstance().normal();
         });
+
+        final Parameter<Boolean> workshopParameter = Parameters.USE_WORKSHOP.toBooolParameter();
+        if(workshopParameter.getValue() != null && workshopParameter.getValue()) workshopFiles = WorkshopUtil.workshopFiles();
 
         boolean lastPause = false;
         while (running) {
@@ -131,6 +144,28 @@ public class Syncer implements Observable, SyncListener {
             }
 
             if (mf != null) {
+                final Path mfPath = mf.getLocaleFile().toPath();
+                if(!workshopFiles.isEmpty()) {
+                    try {
+                        final String modfilePatj = mf.getModfileString().replace("/", File.separator).toLowerCase();
+                        Map.Entry<Path, Long> workshopFile = workshopFiles.entrySet()
+                                .stream().filter(e -> e.getKey().toAbsolutePath().toString().toLowerCase().endsWith(modfilePatj)).findFirst().get();
+                        if(workshopFile.getValue() == mf.getSize()) {
+                            Files.copy(workshopFile.getKey(), mfPath, StandardCopyOption.REPLACE_EXISTING);
+                            Logger.getLogger(getClass().getName()).log(Level.INFO, "Found workshop file and copied: " + mfPath);
+                            success++;
+                            finnishCurrent();
+                            continue;
+                        }
+                    } catch (NoSuchElementException | IOException ignored) {}
+                }
+                if(workshopFiles.containsKey(mfPath)) {
+                    final Long workshopFileSize = workshopFiles.get(mfPath);
+                    if(mf.getSize() == workshopFileSize) {
+                        Logger.getLogger(getClass().getName()).log(Level.INFO, mfPath + "");
+                    }
+                }
+
                 Zsync.Options o = new Zsync.Options();
                 o.setOutputFile(Paths.get(mf.getLocaleFile().getAbsolutePath()));
                 o.setUseragent(ArmA3Launcher.USER_AGENT);

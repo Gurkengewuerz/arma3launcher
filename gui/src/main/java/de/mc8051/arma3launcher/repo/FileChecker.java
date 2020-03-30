@@ -138,7 +138,9 @@ public class FileChecker implements Observable {
         if (modPath == null) modPath = "";
 
         try {
-            List<Path> filePathList = Files.find(Paths.get(modPath),
+            final Path path = Paths.get(modPath);
+            if(!path.toFile().exists() || !path.toFile().isDirectory()) return;
+            List<Path> filePathList = Files.find(path,
                     Integer.MAX_VALUE,
                     (filePath, fileAttr) -> fileAttr.isRegularFile())
                     .collect(Collectors.toList());

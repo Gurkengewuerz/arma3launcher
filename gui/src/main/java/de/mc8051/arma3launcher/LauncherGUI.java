@@ -1060,6 +1060,14 @@ public class LauncherGUI implements Observer {
                 case FINNISHED:
                     refreshRepoButton.setEnabled(true);
                     updateRepoTree();
+
+                    final Parameter<Boolean> checkModsetParameter = Parameters.CHECK_MODSET.toBooolParameter();
+                    if(checkModsetParameter.getValue() != null && checkModsetParameter.getValue()) {
+                        if(!fileChecker.isChecked()) {
+                            SwingUtilities.invokeLater(() -> fileCheck(false));
+                            Logger.getLogger(getClass().getName()).log(Level.INFO, "Started file check on launch");
+                        }
+                    }
                     break;
 
                 case RUNNING:
@@ -1122,7 +1130,8 @@ public class LauncherGUI implements Observer {
 
             lastSynclist = null;
         } else if (s.equals("syncStopped")) {
-            new Thread(() -> fileChecker.check(true)).start();
+            final Parameter<Boolean> workshopParameter = Parameters.USE_WORKSHOP.toBooolParameter();
+            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && workshopParameter.getValue()))).start();
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
@@ -1133,7 +1142,8 @@ public class LauncherGUI implements Observer {
                 TaskBarUtils.getInstance().off();
             });
         } else if (s.equals("syncComplete")) {
-            new Thread(() -> fileChecker.check(true)).start();
+            final Parameter<Boolean> workshopParameter = Parameters.USE_WORKSHOP.toBooolParameter();
+            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && workshopParameter.getValue()))).start();
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
