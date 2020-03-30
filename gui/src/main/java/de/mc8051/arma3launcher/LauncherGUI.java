@@ -781,7 +781,7 @@ public class LauncherGUI implements Observer {
     private void initComboBox(JComboBox<String> cb, String parameter, Parameter.ParameterType pType, String[] values) {
         Parameter<String> paraObj = new Parameter<>(parameter, pType, String.class, values);
         cb.setSelectedIndex(paraObj.getIndex());
-        if (cb.getItemListeners().length == 0) cb.addItemListener(new SettingsHandler.ComboBoxListener(paraObj));
+        if (cb.getItemListeners().length == 1) cb.addItemListener(new SettingsHandler.ComboBoxListener(paraObj));
     }
 
     private void initFolderChooser(JTextField showText, JButton actionButton, String parameter, Parameter.ParameterType pType, Callback.JFileSelectCallback check) {
