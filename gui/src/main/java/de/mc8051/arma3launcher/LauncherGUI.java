@@ -1056,7 +1056,7 @@ public class LauncherGUI implements Observer {
                 techCheck();
             });
         } else if (s.equals(RepositoryManger.Type.MODSET.toString())) {
-            switch (RepositoryManger.getInstance().getStatus(RepositoryManger.Type.METADATA)) {
+            switch (RepositoryManger.getInstance().getStatus(RepositoryManger.Type.MODSET)) {
                 case FINNISHED:
                     refreshRepoButton.setEnabled(true);
                     updateRepoTree();
