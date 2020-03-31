@@ -24,7 +24,8 @@ Inside ``gui/target/`` you find the gui as jar, jar with dependencies, jar wrapp
 ### Distribute
 After building the package you find inside the ``gui/target/`` folder an zip file.
 This zip file contains an empty ``jre/`` and an empty ``logs/`` folder.
-Bundle your own JRE with minimum JRE12 and put it in the ``*.zip/jre/``.  
+Bundle your own JRE with minimum JRE12 and put it in the ``*.zip/jre/``.
+The ``jre/`` folder should then contain ``{bin,conf,lib}/``.  
 
 Linux/Mac users can run the *arma3launcher-gui.jar*.  
 Windows users can simply run the *arma3launcher.exe* and the launch4j wrapper prioritize the local JRE else use the bundled jre. 
