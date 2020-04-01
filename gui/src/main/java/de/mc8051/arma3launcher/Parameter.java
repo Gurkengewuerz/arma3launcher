@@ -1,17 +1,17 @@
 package de.mc8051.arma3launcher;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ini4j.Ini;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by gurkengewuerz.de on 24.03.2020.
  */
 public class Parameter {
+
+    private final static Logger logger = LogManager.getLogger(Parameter.class);
 
     private String name;
     private ParameterType pType;
@@ -66,9 +66,10 @@ public class Parameter {
         }
 
         try {
+            logger.debug("{}: saved value {}", name, data);
             ArmA3Launcher.user_config.store();
         } catch (IOException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
         }
     }
 
@@ -101,7 +102,11 @@ public class Parameter {
 
     public Object getValue() {
         final Object configValue = getConfigValue();
-        if(configValue != null) return configValue;
+        if(configValue != null) {
+            logger.debug("{}: use config value {}", name, configValue);
+            return configValue;
+        }
+        logger.debug("{}: use default value", name);
         return getDefault();
     }
 

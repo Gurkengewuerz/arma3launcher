@@ -6,6 +6,9 @@ import de.mc8051.arma3launcher.interfaces.Observer;
 import de.mc8051.arma3launcher.objects.AbstractMod;
 import de.mc8051.arma3launcher.objects.Mod;
 import de.mc8051.arma3launcher.objects.ModFile;
+import de.mc8051.arma3launcher.utils.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -15,14 +18,14 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
  * Created by gurkengewuerz.de on 26.03.2020.
  */
 public class FileChecker implements Observable {
+
+    private static final Logger logger = LogManager.getLogger(FileChecker.class);
 
     private List<Observer> observerList = new ArrayList<>();
     private JProgressBar pb;
@@ -48,6 +51,7 @@ public class FileChecker implements Observable {
     }
 
     public void check(boolean fastscan) {
+        logger.info("Initiated file check with {} scan", fastscan ? "fast" : "hash");
         running = true;
         deleted.clear();
         changed.clear();
@@ -67,6 +71,7 @@ public class FileChecker implements Observable {
                 stop = false;
                 running = false;
                 notifyObservers("fileCheckerStopped");
+                logger.info("File checker stopped");
                 return;
             }
             if (abstractMod instanceof Mod) {
@@ -85,6 +90,7 @@ public class FileChecker implements Observable {
                         stop = false;
                         running = false;
                         notifyObservers("fileCheckerStopped");
+                        logger.info("File checker stopped");
                         return;
                     }
                 }
@@ -118,6 +124,8 @@ public class FileChecker implements Observable {
     }
 
     private void checkFile(String mod, ModFile mf, boolean fastscan) {
+        logger.debug("Check {}", mf.getLocaleFile().getAbsolutePath());
+
         ArrayList<ModFile> temp = new ArrayList<>();
 
         if (!mf.exists()) {
@@ -126,6 +134,7 @@ public class FileChecker implements Observable {
             added.put(mod, temp);
             addedCount++;
             size += mf.getSize();
+            logger.info("File {} not exists", mf.getLocaleFile().getAbsolutePath());
             return;
         }
 
@@ -137,9 +146,12 @@ public class FileChecker implements Observable {
                 changed.put(mod, temp);
                 changedCount++;
                 size += mf.getSize();
+                logger.debug("File {} changed", mf.getLocaleFile().getAbsolutePath());
                 return;
             }
         }
+
+        logger.debug("File {} is okay", mf.getLocaleFile().getAbsolutePath());
     }
 
     private void checkDeleted() {
@@ -180,10 +192,11 @@ public class FileChecker implements Observable {
 
                 if (deleteable == null) {
                     deleted.add(localPath);
+                    logger.info("Deleted {}", localPath);
                 }
             }
         } catch (IOException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
         }
     }
 

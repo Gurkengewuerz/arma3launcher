@@ -3,23 +3,22 @@ package de.mc8051.arma3launcher.objects;
 import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.utils.FileUtils;
 import de.mc8051.arma3launcher.utils.URLUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by gurkengewuerz.de on 25.03.2020.
  */
 public class ModFile implements AbstractMod {
+
+    private static final Logger logger = LogManager.getLogger(ModFile.class);
 
     private File f;
     private long size;
@@ -98,7 +97,7 @@ public class ModFile implements AbstractMod {
                 localGeneratedSHA1sum = FileUtils.sha1Hex(f);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
         }
         return localGeneratedSHA1sum;
     }

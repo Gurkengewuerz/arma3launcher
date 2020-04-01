@@ -1,6 +1,8 @@
 package de.mc8051.arma3launcher.repo.sync;
 
 import de.mc8051.arma3launcher.Parameters;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,6 +17,8 @@ import java.util.stream.Collectors;
  */
 public class WorkshopUtil {
 
+    private static final Logger logger = LogManager.getLogger(WorkshopUtil.class);
+
     public static Map<Path, Long> workshopFiles() {
         Map<Path, Long> fileMap = new HashMap<>();
 
@@ -22,8 +26,12 @@ public class WorkshopUtil {
         if(armaPath == null) return fileMap;
 
         final Path workshopPath = Paths.get(armaPath, "!Workshop");
+        logger.debug("Get workshop files in {}", workshopPath);
 
-        if(!workshopPath.toFile().exists()) return fileMap;
+        if(!workshopPath.toFile().exists()) {
+            logger.debug("Workshop folder does not exists");
+            return fileMap;
+        }
         if(!workshopPath.toFile().isDirectory()) return fileMap;
 
         try {
@@ -32,6 +40,7 @@ public class WorkshopUtil {
                     (filePath, fileAttr) -> fileAttr.isRegularFile())
                     .filter((p) -> p.toFile().getName().endsWith(".pbo"))
                     .collect(Collectors.toMap(path -> path, path -> path.toFile().length()));
+            logger.info("Found {} Workshop files", fileMap.size());
             return fileMap;
         } catch (IOException ex) {
             return fileMap;

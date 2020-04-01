@@ -1,17 +1,20 @@
 package de.mc8051.arma3launcher.utils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by gurkengewuerz.de on 27.03.2020.
  */
 public class TaskBarUtils {
+
+    private static final Logger logger = LogManager.getLogger(TaskBarUtils.class);
 
     public static BufferedImage IMAGE_ICON = createIcon();
     public static BufferedImage IMAGE_LGO = createLogo();
@@ -30,6 +33,8 @@ public class TaskBarUtils {
         if (isTaskbarSupported) {
             taskbar = Taskbar.getTaskbar();
         }
+
+        logger.info(isTaskbarSupported ? "Taskbar is supported" : "Taskbar not supported");
 
         isSystemtraySupported = SystemTray.isSupported();
         if (isSystemtraySupported) {
@@ -54,9 +59,11 @@ public class TaskBarUtils {
                     });
                 });
             } catch (AWTException e) {
-                Logger.getLogger(TaskBarUtils.class.getName()).log(Level.SEVERE, null, e);
+                logger.error(e);
             }
         }
+
+        logger.info(isSystemtraySupported ? "Systemtray is supported" : "Systemtray not supported");
     }
 
     public static TaskBarUtils getInstance() {
@@ -109,7 +116,7 @@ public class TaskBarUtils {
     public void notification(String caption, String text, TrayIcon.MessageType type) {
         if (!isSystemtraySupported) return;
         if (trayIcon == null) return;
-
+        logger.debug("Sending notification: {} {}", caption, text);
         trayIcon.displayMessage(caption, text, type);
     }
 
@@ -127,7 +134,7 @@ public class TaskBarUtils {
         try {
             return ImageIO.read(TaskBarUtils.class.getResourceAsStream("/icons/logo_32.png"));
         } catch (IOException e) {
-            Logger.getLogger(TaskBarUtils.class.getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
             return null;
         }
     }
@@ -136,7 +143,7 @@ public class TaskBarUtils {
         try {
             return ImageIO.read(TaskBarUtils.class.getResourceAsStream("/icons/logo_256.png"));
         } catch (IOException e) {
-            Logger.getLogger(TaskBarUtils.class.getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
             return null;
         }
     }

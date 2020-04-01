@@ -10,6 +10,8 @@ import de.mc8051.arma3launcher.objects.ModFile;
 import de.mc8051.arma3launcher.objects.Modset;
 import de.mc8051.arma3launcher.objects.Server;
 import de.mc8051.arma3launcher.utils.Callback;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ini4j.Ini;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,9 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
@@ -36,6 +35,8 @@ import static java.time.temporal.ChronoUnit.SECONDS;
  * Created by gurkengewuerz.de on 24.03.2020.
  */
 public class RepositoryManger implements Observable {
+
+    private static final Logger logger = LogManager.getLogger(RepositoryManger.class);
 
     private static RepositoryManger instance;
 
@@ -52,6 +53,7 @@ public class RepositoryManger implements Observable {
     }
 
     public void getAsync(String urlS, Callback.HttpCallback callback) {
+        logger.info("async http request {}", urlS);
         new Thread(() -> {
             try {
                 URI url = new URI(urlS);
@@ -70,13 +72,13 @@ public class RepositoryManger implements Observable {
                 Response r = new Response(response);
 
                 if (!r.isSuccessful()) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Cant open " + r.request().uri() + " code " + r.getStatusCode());
+                    logger.error("Cant open {} code {}", r.request().uri(), r.getStatusCode());
                     return;
                 }
 
                 callback.response(r);
             } catch (IOException | URISyntaxException | InterruptedException e) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                logger.error(e);
                 callback.response(null);
             }
         }).start();
@@ -132,7 +134,7 @@ public class RepositoryManger implements Observable {
                     statusMap.replace(Type.METADATA, DownloadStatus.FINNISHED);
                     RepositoryManger.getInstance().notifyObservers(Type.METADATA.toString());
                 } catch (NullPointerException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                    logger.error(e);
                 }
             }
         });
@@ -198,7 +200,7 @@ public class RepositoryManger implements Observable {
                     statusMap.replace(Type.MODSET, DownloadStatus.FINNISHED);
                     RepositoryManger.getInstance().notifyObservers(Type.MODSET.toString());
                 } catch (NullPointerException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                    logger.error(e);
                 }
             }
         });

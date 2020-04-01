@@ -5,3 +5,4 @@ META-INF/
 target/
 */target/
 dist/src/main/resources/jre.zip
+logs/

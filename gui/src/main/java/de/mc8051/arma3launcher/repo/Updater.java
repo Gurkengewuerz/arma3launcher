@@ -3,6 +3,8 @@ package de.mc8051.arma3launcher.repo;
 import de.mc8051.arma3launcher.ArmA3Launcher;
 import de.mc8051.arma3launcher.utils.Callback;
 import de.mc8051.arma3launcher.utils.URLUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,13 +16,13 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by gurkengewuerz.de on 29.03.2020.
  */
 public class Updater {
+
+    private static final Logger logger = LogManager.getLogger(Updater.class);
 
     private File patcherFile = new File(ArmA3Launcher.APPLICATION_PATH + File.separator + "patcher.jar");
     private File me;
@@ -37,17 +39,17 @@ public class Updater {
     public void update() throws IOException {
         if (!me.exists() || !me.isFile()) throw new IOException("Own jar not exists. Are you running in dev?");
         if (!patcherFile.exists()) throw new IOException("Patcher does not exists");
-        Runtime.getRuntime().exec(
-                "\"" + System.getProperty("java.home") + File.separator + "bin" + File.separator + "java\"" +
-                        " -jar \"" + patcherFile.getAbsolutePath() + "\"" +
-                        " \"" + ArmA3Launcher.config.getString("sync.url") + "/.sync/" + URLUtils.encodeToURL(newFile) + "\"" +
-                        " \"" + me.getAbsolutePath() + "\""
-        );
+        final String command = "\"" + System.getProperty("java.home") + File.separator + "bin" + File.separator + "java\"" +
+                " -jar \"" + patcherFile.getAbsolutePath() + "\"" +
+                " \"" + ArmA3Launcher.config.getString("sync.url") + "/.sync/" + URLUtils.encodeToURL(newFile) + "\"" +
+                " \"" + me.getAbsolutePath() + "\"";
+        logger.info("Run patcher: {}", command);
+        Runtime.getRuntime().exec(command);
     }
 
     public void downloadPatcher() {
         if(patcherFile.exists()) {
-            Logger.getLogger(getClass().getName()).log(Level.INFO, "Patcher already exists. Skip.");
+            logger.info("Patcher already exists. Skip copy.");
             return;
         }
         try {
@@ -63,13 +65,13 @@ public class Updater {
                 if (r.statusCode() != 200) return;
                 try {
                     Files.copy(tempFile, patcherFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    Logger.getLogger(getClass().getName()).log(Level.INFO, "Patcher copied to " + patcherFile.getAbsolutePath());
+                    logger.info("Patcher copied to " + patcherFile.getAbsolutePath());
                 } catch (IOException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Copy patcher failed", e);
+                    logger.error("Copy patcher failed", e);
                 }
             });
         } catch (IOException | URISyntaxException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
         }
     }
 
@@ -86,6 +88,8 @@ public class Updater {
             return;
         }
 
+        logger.info("Check for newest version");
+
         getNewestVersion(new Callback.HttpCallback() {
             @Override
             public void response(Response r) {
@@ -97,6 +101,8 @@ public class Updater {
                 final boolean needUpdate = currentVersion.compareTo(newestVersion) < 0;
                 if(needUpdate) downloadPatcher();
                 lastCheck = System.currentTimeMillis();
+
+                logger.info(needUpdate ? "Need to update to {}" : "already on newest version {}", newestVersion.get());
 
                 callback.response(needUpdate, newestVersion);
             }

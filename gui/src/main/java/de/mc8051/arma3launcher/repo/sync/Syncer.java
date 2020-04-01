@@ -13,6 +13,8 @@ import de.mc8051.arma3launcher.objects.AbstractMod;
 import de.mc8051.arma3launcher.objects.ModFile;
 import de.mc8051.arma3launcher.utils.Humanize;
 import de.mc8051.arma3launcher.utils.TaskBarUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.io.File;
@@ -27,14 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * Created by gurkengewuerz.de on 25.03.2020.
  */
 public class Syncer implements Observable, SyncListener {
+
+    private static final Logger logger = LogManager.getLogger(Syncer.class);
 
     private List<Observer> observerList = new ArrayList<>();
 
@@ -120,7 +121,7 @@ public class Syncer implements Observable, SyncListener {
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                    logger.error(e);
                 }
                 continue;
             } else if (lastPause) {
@@ -132,7 +133,7 @@ public class Syncer implements Observable, SyncListener {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                    logger.error(e);
                 }
             }
 
@@ -144,6 +145,8 @@ public class Syncer implements Observable, SyncListener {
             }
 
             if (mf != null) {
+                logger.info("ZSync - Sync file {}", mf.getLocaleFile().getAbsolutePath());
+
                 final Path mfPath = mf.getLocaleFile().toPath();
                 final String mfModPath = mf.getModPath();
                 if(!workshopFiles.isEmpty()) {
@@ -152,20 +155,16 @@ public class Syncer implements Observable, SyncListener {
                         Map.Entry<Path, Long> workshopFile = workshopFiles.entrySet()
                                 .stream().filter(e -> e.getKey().toAbsolutePath().toString().toLowerCase().endsWith(modfilePatj)).findFirst().get();
                         if(workshopFile.getValue() == mf.getSize()) {
+                            logger.info("ZSync - Found file in {}. Copy.", workshopFile.getKey());
                             SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(mfModPath + ": Found in Steam-Workshop. Copy."));
                             Files.copy(workshopFile.getKey(), mfPath, StandardCopyOption.REPLACE_EXISTING);
+                            logger.info("ZSync - Copied");
                             SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(mfModPath + ": Copied"));
                             success++;
                             finnishCurrent();
                             continue;
                         }
                     } catch (NoSuchElementException | IOException ignored) {}
-                }
-                if(workshopFiles.containsKey(mfPath)) {
-                    final Long workshopFileSize = workshopFiles.get(mfPath);
-                    if(mf.getSize() == workshopFileSize) {
-                        Logger.getLogger(getClass().getName()).log(Level.INFO, mfPath + "");
-                    }
                 }
 
                 Zsync.Options o = new Zsync.Options();
@@ -179,7 +178,7 @@ public class Syncer implements Observable, SyncListener {
                     syncObserver = new SyncObserver(this);
                     zsync.zsync(URI.create(mf.getRemoteFile() + ".zsync"), o, syncObserver);
                 } catch (ZsyncException | IllegalArgumentException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                    logger.error(e);
                 }
             } else {
                 modlist.remove(0);
@@ -206,7 +205,9 @@ public class Syncer implements Observable, SyncListener {
                 .filter((p) -> p.toFile().exists())
                 .filter((p) -> p.toFile().canRead())
                 .filter((p) -> p.toFile().canWrite())
-                .forEach((p) -> p.toFile().delete());
+                .forEach((p) -> {
+                    logger.info(p.toFile().delete() ? "ZSync - Deleted file {}" : "ZSync - Error deleting file", p);
+                });
     }
 
     public void cleanUpEmptyFolders() {
@@ -220,22 +221,24 @@ public class Syncer implements Observable, SyncListener {
                     .filter((p) -> p.toFile().canRead())
                     .filter((p) -> p.toFile().canWrite())
                     .filter((p) -> p.toFile().list().length == 0)
-                    .forEach((p) -> p.toFile().delete());
+                    .forEach((p) -> {
+                        logger.info(p.toFile().delete() ? "ZSync - Deleted empty folder {}" : "ZSync - Error deleting empty folder", p);
+                    });;
         } catch (IOException e) {
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+            logger.error(e);
         }
     }
 
     @Override
     public void zsyncStarted(Zsync.Options options) {
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "ZSync started " + options.getOutputFile());
+        logger.info("ZSync - started " + options.getOutputFile());
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Sync started"));
     }
 
     @Override
     public void zsyncFailed(Exception exception) {
         currentDownload_failed = true;
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "Zsync failed " + exception.getMessage());
+        logger.error("ZSync - failed", exception);
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Sync failed"));
     }
 
@@ -245,14 +248,14 @@ public class Syncer implements Observable, SyncListener {
         speedCalcTime+=System.currentTimeMillis()-downloadStarted;
 
         if (speedCalcSize > 20 * 1024 * 1024) {
-
             final double speedByte = ((double)speedCalcSize)/((double)speedCalcTime /1000);
+            logger.info("ZSync - download speed: {} bytes/s", speedByte);
             SwingUtilities.invokeLater(() -> gui.syncDownloadSpeedLabel.setText(Humanize.binaryPrefix(Double.valueOf(speedByte).longValue()) + "/s"));
             speedCalcSize = 0L;
             speedCalcTime = 0L;
         }
 
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "Zsync complete");
+        logger.info("ZSync - complete");
 
         if (currentDownload_failed)
             failed++;
@@ -284,44 +287,46 @@ public class Syncer implements Observable, SyncListener {
 
     @Override
     public void controlFileDownloadingStarted(Path path, long length) {
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "controlFileDownloadingStarted " + length);
+        logger.debug("ZSync - control file downloading started: length {} bytes", length);
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Get Header"));
     }
 
     @Override
     public void controlFileReadingComplete() {
-
+        logger.debug("ZSync - control file downloading complete");
     }
 
     @Override
     public void outputFileWritingStarted(long length) {
+        logger.debug("ZSync - output file writing started: {} bytes", length);
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Writing File"));
     }
 
     @Override
     public void outputFileWritingCompleted() {
-
+        logger.debug("ZSync - output file writing completed");
     }
 
     @Override
     public void inputFileReadingStarted(Path inputFile, long length) {
+        logger.info("ZSync - input file reading started: {} bytes", length);
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Reading File"));
     }
 
     @Override
     public void inputFileReadingComplete() {
-
+        logger.debug("ZSync - input file reading complete");
     }
 
     @Override
     public void controlFileDownloadingComplete() {
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "controlFileDownloadingComplete");
+        logger.debug("ZSync - control file downloading complete");
     }
 
     @Override
     public void remoteFileDownloadingInitiated(List<ContentRange> ranges) {
         downloadStarted = System.currentTimeMillis();
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "remoteFileDownloadingInitiated");
+        logger.debug("ZSync - remote file downloading initiated");
         SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(currentDownload.getModPath() + ": Downloading"));
     }
 
@@ -330,12 +335,12 @@ public class Syncer implements Observable, SyncListener {
         downloadDownloaded = 0;
         downloadSize = length;
 
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "remoteFileDownloadingStarted " + length);
+        logger.info("ZSync - remote file downloading started: {} bytes", length);
     }
 
     @Override
     public void remoteFileDownloadingComplete() {
-        Logger.getLogger(getClass().getName()).log(Level.INFO, "remoteFileDownloadingStarted");
+        logger.info("ZSync - remote file downloading complete");
     }
 
     @Override

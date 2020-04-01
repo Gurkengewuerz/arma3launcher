@@ -22,6 +22,10 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.mc8051.arma3launcher.steam.SteamTimer;
 import de.mc8051.arma3launcher.utils.TaskBarUtils;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.ini4j.Ini;
 
 import javax.swing.*;
@@ -29,17 +33,18 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Timer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by gurkengewuerz.de on 23.03.2020.
  */
 public class ArmA3Launcher {
+
+    private static final Logger logger = LogManager.getLogger(ArmA3Launcher.class);
 
     public static final String[] SUPPORTED_LANGUAGES = {"en_US", "de_DE"};
 
@@ -51,40 +56,70 @@ public class ArmA3Launcher {
     public static Config config;
     public static Ini user_config;
 
-    public static void main(String... args) throws Exception {
+    public static void main(String... args) {
+        Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+
         config = ConfigFactory.load("arma3launcher");
 
         CLIENT_NAME = config.getString("name");
+        logger.info("Application with client name {} started", CLIENT_NAME);
 
         final Properties properties = new Properties();
-        properties.load(ArmA3Launcher.class.getClassLoader().getResourceAsStream("project.properties"));
+        try {
+            properties.load(ArmA3Launcher.class.getClassLoader().getResourceAsStream("project.properties"));
+        } catch (IOException e) {
+            logger.error(e);
+            System.exit(0);
+        }
         VERSION = properties.getProperty("version");
+        logger.info("Application version v{}", VERSION);
 
         APPLICATION_PATH = getAppData() + CLIENT_NAME;
+        logger.debug("Application path {}", APPLICATION_PATH);
 
         USER_AGENT = config.getString("sync.useragent") + "/" + VERSION;
 
         if (new File(APPLICATION_PATH).mkdirs()) {
-            Logger.getLogger(ArmA3Launcher.class.getName()).log(Level.SEVERE, "Can not create " + APPLICATION_PATH);
+            logger.error("Can not create " + APPLICATION_PATH);
             System.exit(0);
         }
 
         File userConfigFile = new File(APPLICATION_PATH + File.separator + "config.ini");
-        if(!userConfigFile.exists()) {
-            if(!userConfigFile.createNewFile()) {
-                Logger.getLogger(ArmA3Launcher.class.getName()).log(Level.SEVERE, "Can not create " + userConfigFile.getAbsolutePath());
+        if (!userConfigFile.exists()) {
+            try {
+                if (!userConfigFile.createNewFile()) {
+                    logger.error("Can not create " + userConfigFile.getAbsolutePath());
+                    System.exit(0);
+                }
+            } catch (IOException e) {
+                logger.error(e);
                 System.exit(0);
             }
         }
 
-        user_config = new Ini(userConfigFile);
+        try {
+            user_config = new Ini(userConfigFile);
+        } catch (IOException e) {
+            logger.error("Couldn't read " + userConfigFile.getAbsolutePath(), e);
+            System.exit(0);
+        }
 
+        final Parameter debugParameter = Parameters.DEBUG.toParameter();
+        if(debugParameter.getValue() != null && (Boolean) debugParameter.getValue())
+            Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.ALL);
+
+        logger.debug("Setup steam timer");
         Timer steamTimer = new Timer();
 
         setLanguage();
 
-        UIManager.setLookAndFeel(new FlatDarkLaf());
+        try {
+            UIManager.setLookAndFeel(new FlatDarkLaf());
+        } catch (UnsupportedLookAndFeelException e) {
+            logger.error("Failed to set LAF", e);
+        }
 
+        logger.debug("Setup frame with client name {}", CLIENT_NAME);
         JFrame frame = new JFrame(CLIENT_NAME);
         TaskBarUtils.getInstance().setWindow(frame);
 
@@ -94,11 +129,13 @@ public class ArmA3Launcher {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
+                logger.info("Shutting down application correctly");
                 steamTimer.cancel();
                 steamTimer.purge();
                 TaskBarUtils.getInstance().removeTrayIcon();
                 gui.exit();
                 frame.dispose();
+                logger.info("Shut down");
             }
         });
 
@@ -113,7 +150,9 @@ public class ArmA3Launcher {
                 new SteamTimer(),
                 500,      // run first occurrence immediately
                 10000);  // run every thirty seconds
+        logger.info("SteamTimer scheduled at fixed rate");
 
+        logger.debug("GUI launched");
         frame.setVisible(true);
     }
 
@@ -135,14 +174,17 @@ public class ArmA3Launcher {
 
     private static void setLanguage() {
         String lang = Locale.getDefault().getLanguage() + "_" + Locale.getDefault().getCountry();
+        logger.debug("Default language {}", lang);
 
         String clientSetting = ArmA3Launcher.user_config.get("client", "language");
-        if(clientSetting != null && !clientSetting.equals("system") && Arrays.asList(SUPPORTED_LANGUAGES).contains(clientSetting)) {
+        if (clientSetting != null && !clientSetting.equals("system") && Arrays.asList(SUPPORTED_LANGUAGES).contains(clientSetting)) {
             Locale.setDefault(new Locale(clientSetting.split("_")[0], clientSetting.split("_")[1]));
+            logger.info("Using config language {}", lang);
             return;
         }
 
-        if(!Arrays.asList(SUPPORTED_LANGUAGES).contains(lang))
+        if (!Arrays.asList(SUPPORTED_LANGUAGES).contains(lang))
             Locale.setDefault(new Locale("en", "US"));
+        logger.info("Using language {}", lang);
     }
 }

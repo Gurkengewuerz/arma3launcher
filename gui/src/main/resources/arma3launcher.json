@@ -17,7 +17,8 @@
     "CheckModset": false,
     "UseWorkshop": false,
     "behaviourAfterStart": "nothing",
-    "language": "system"
+    "language": "system",
+    "debug": false
   },
   "arma": {
     "Profile": "",

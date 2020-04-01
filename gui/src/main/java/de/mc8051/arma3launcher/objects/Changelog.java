@@ -1,7 +1,6 @@
 package de.mc8051.arma3launcher.objects;
 
 import de.mc8051.arma3launcher.repo.RepositoryManger;
-import de.mc8051.arma3launcher.utils.Callback;
 
 /**
  * Created by gurkengewuerz.de on 27.03.2020.

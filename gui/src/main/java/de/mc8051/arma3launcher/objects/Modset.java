@@ -1,8 +1,9 @@
 package de.mc8051.arma3launcher.objects;
 
 import de.mc8051.arma3launcher.ArmA3Launcher;
-import de.mc8051.arma3launcher.Parameter;
 import de.mc8051.arma3launcher.Parameters;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ini4j.Ini;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -10,17 +11,16 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
  * Created by gurkengewuerz.de on 25.03.2020.
  */
 public class Modset implements Comparable {
+
+    private static final Logger logger = LogManager.getLogger(Modset.class);
 
     public static HashMap<String, Modset> MODSET_LIST = new HashMap<>();
 
@@ -74,9 +74,10 @@ public class Modset implements Comparable {
                 section.add(name, ja.toString());
 
             try {
+                logger.debug("{}: saved modset {}", String.join(";", list));
                 ArmA3Launcher.user_config.store();
             } catch (IOException e) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                logger.error(e);
             }
         }
     }
@@ -91,9 +92,10 @@ public class Modset implements Comparable {
                 section.remove(name);
 
                 try {
+                    logger.debug("{}: removed modset and saved", name);
                     ArmA3Launcher.user_config.store();
                 } catch (IOException e) {
-                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, e);
+                    logger.error(e);
                 }
             }
         }

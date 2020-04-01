@@ -12,6 +12,7 @@ public enum Parameters {
     USE_WORKSHOP("UseWorkshop", Parameter.ParameterType.CLIENT, Boolean.class),
     ARMA_PATH("armaPath", Parameter.ParameterType.CLIENT, String.class),
     MOD_PATH("modPath", Parameter.ParameterType.CLIENT, String.class),
+    DEBUG("debug", Parameter.ParameterType.CLIENT, Boolean.class),
 
     PROFILE("Profile", Parameter.ParameterType.ARMA, String.class, "name"),
     USE_64_BIT_CLIENT("Use64BitClient", Parameter.ParameterType.ARMA, Boolean.class),
