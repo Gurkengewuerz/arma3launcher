@@ -32,6 +32,11 @@
             <destName>${project.parent.artifactId}-gui.jar</destName>
             <outputDirectory>./</outputDirectory>
         </file>
+        <file>
+            <source>src/main/resources/logo.ico</source>
+            <destName>logo.ico</destName>
+            <outputDirectory>./</outputDirectory>
+        </file>
     </files>
 
     <fileSets>
