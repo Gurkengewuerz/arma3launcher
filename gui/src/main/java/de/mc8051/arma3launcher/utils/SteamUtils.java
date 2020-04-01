@@ -1,29 +1,26 @@
 package de.mc8051.arma3launcher.utils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 /**
  * Created by gurkengewuerz.de on 23.03.2020.
  */
 public class SteamUtils {
 
-    public static boolean findProcess(String findProcess) throws IOException {
-        String filenameFilter = "/nh /fi \"Imagename eq "+findProcess+"\"";
-        String tasksCmd = System.getenv("windir") +"/system32/tasklist.exe "+filenameFilter;
+    private static final Logger logger = LogManager.getLogger(SteamUtils.class);
 
-        Process p = Runtime.getRuntime().exec(tasksCmd);
-        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-
-        ArrayList<String> procs = new ArrayList<String>();
-        String line = null;
-        while ((line = input.readLine()) != null)
-            procs.add(line);
-
-        input.close();
-
-        return procs.stream().anyMatch(row -> row.contains(findProcess));
+    public static boolean findProcess(String findProcess) {
+        Optional<ProcessHandle> p = ProcessHandle.allProcesses()
+                .filter(processHandle -> processHandle.info().command().isPresent())
+                .filter(process -> process.info().command().get().toLowerCase().endsWith(findProcess)).findFirst();
+        if(p.isEmpty()) return false;
+        logger.debug("Found process {}", findProcess);
+        logger.debug("    PID {}", p.get().pid());
+        logger.debug("    Name {}", p.get().info().command());
+        logger.debug("    User {}", p.get().info().user());
+        return true;
     }
 }

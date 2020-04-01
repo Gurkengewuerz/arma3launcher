@@ -54,8 +54,7 @@ public class SteamTimer extends TimerTask {
 
             arma_running = SteamUtils.findProcess("arma3.exe")
                     || SteamUtils.findProcess("arma3_x64.exe")
-                    || SteamUtils.findProcess("arma3battleye.exe")
-                    || SteamUtils.findProcess("arma3launcher.exe");
+                    || SteamUtils.findProcess("arma3battleye.exe");
 
             logger.debug(arma_running ? "ArmA process found" : "ArmA process not found");
 
