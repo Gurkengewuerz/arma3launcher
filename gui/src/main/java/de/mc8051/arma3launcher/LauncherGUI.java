@@ -371,7 +371,7 @@ public class LauncherGUI implements Observer {
                 Object elementAt = model1.getElementAt(presetList.getSelectedIndex());
                 Modset selectedModset = (Modset) elementAt;
 
-                if(selectedModset.getType() == Modset.Type.PLACEHOLDER) return;
+                if (selectedModset.getType() == Modset.Type.PLACEHOLDER) return;
 
                 ArmaUtils.start(selectedModset);
             }
@@ -416,6 +416,8 @@ public class LauncherGUI implements Observer {
             syncIntensiveCheckButton.setEnabled(false);
             syncFastCheckButton.setEnabled(false);
             refreshRepoButton.setEnabled(false);
+            playButton.setEnabled(false);
+            playPresetButton.setEnabled(false);
             new Thread(() -> syncer.sync(lastSynclist.clone())).start();
         });
 
@@ -672,7 +674,7 @@ public class LauncherGUI implements Observer {
             syncFastCheckButton.setToolTipText(LangUtils.getInstance().getString("arma_running"));
         } else {
             if (SteamTimer.steam_running) {
-                if (pathSet) {
+                if (pathSet && !syncer.isRunning() && !fileChecker.isRunning()) {
                     if (serverTable.getSelectedRow() != -1) {
                         playButton.setEnabled(true);
                         playButton.setToolTipText(null);
@@ -1161,11 +1163,11 @@ public class LauncherGUI implements Observer {
             syncDownloadButton.setEnabled(true);
             syncPauseButton.setEnabled(false);
 
-            refreshRepoButton.setEnabled(true);
-
             syncChangedFileSizeLabel.setText(Humanize.binaryPrefix(fileChecker.getSize()));
 
             lastSynclist = null;
+
+            techCheck();
         } else if (s.equals("fileCheckerStopped")) {
             syncIntensiveCheckButton.setEnabled(true);
             syncFastCheckButton.setEnabled(true);
@@ -1179,7 +1181,6 @@ public class LauncherGUI implements Observer {
             syncPauseButton.setEnabled(false);
 
             repoTree.setCheckboxesChecked(false);
-            refreshRepoButton.setEnabled(true);
 
             syncAddedFilesLabel.setText("" + 0);
             syncChangedFilesLabel.setText("" + 0);
@@ -1188,6 +1189,7 @@ public class LauncherGUI implements Observer {
             syncChangedFileSizeLabel.setText("0.0 B");
 
             lastSynclist = null;
+            techCheck();
         } else if (s.equals("syncStopped")) {
             final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
             fileCheck(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()));
@@ -1200,6 +1202,7 @@ public class LauncherGUI implements Observer {
                 TaskBarUtils.getInstance().setValue(0);
                 TaskBarUtils.getInstance().off();
             });
+            techCheck();
         } else if (s.equals("syncComplete")) {
             final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
             fileCheck(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()));
@@ -1214,6 +1217,7 @@ public class LauncherGUI implements Observer {
                 TaskBarUtils.getInstance().attention();
                 TaskBarUtils.getInstance().notification("Sync complete", "", TrayIcon.MessageType.INFO);
             });
+            techCheck();
         } else if (s.equals("syncContinue")) {
             SwingUtilities.invokeLater(() -> {
                 syncDownloadAbortButton.setEnabled(true);
@@ -1266,6 +1270,9 @@ public class LauncherGUI implements Observer {
 
         repoTree.setCheckboxesEnabled(false);
         repoTree.setCheckboxesChecked(false);
+
+        playButton.setEnabled(false);
+        playPresetButton.setEnabled(false);
     }
 
     public void exit() {

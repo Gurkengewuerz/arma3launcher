@@ -29,12 +29,13 @@ public class FileChecker implements Observable {
     private boolean stop = false;
 
     private boolean checked = false;
+    private boolean running = false;
 
     private ArrayList<Path> deleted = new ArrayList<>();
     private HashMap<String, ArrayList<ModFile>> changed = new HashMap<>();
-    int changedCount = 0;
+    private int changedCount = 0;
     private HashMap<String, ArrayList<ModFile>> added = new HashMap<>();
-    int addedCount = 0;
+    private int addedCount = 0;
 
     long size = 0;
 
@@ -47,6 +48,7 @@ public class FileChecker implements Observable {
     }
 
     public void check(boolean fastscan) {
+        running = true;
         deleted.clear();
         changed.clear();
         changedCount = 0;
@@ -63,6 +65,7 @@ public class FileChecker implements Observable {
         for (AbstractMod abstractMod : RepositoryManger.MOD_LIST) {
             if (stop) {
                 stop = false;
+                running = false;
                 notifyObservers("fileCheckerStopped");
                 return;
             }
@@ -80,6 +83,7 @@ public class FileChecker implements Observable {
 
                     if (stop) {
                         stop = false;
+                        running = false;
                         notifyObservers("fileCheckerStopped");
                         return;
                     }
@@ -98,6 +102,7 @@ public class FileChecker implements Observable {
         checkDeleted();
         notifyObservers("fileChecker");
         checked = true;
+        running = false;
     }
 
     public boolean isChecked() {
@@ -106,6 +111,10 @@ public class FileChecker implements Observable {
 
     public void stop() {
         stop = true;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 
     private void checkFile(String mod, ModFile mf, boolean fastscan) {

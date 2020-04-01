@@ -145,14 +145,16 @@ public class Syncer implements Observable, SyncListener {
 
             if (mf != null) {
                 final Path mfPath = mf.getLocaleFile().toPath();
+                final String mfModPath = mf.getModPath();
                 if(!workshopFiles.isEmpty()) {
                     try {
                         final String modfilePatj = mf.getModfileString().replace("/", File.separator).toLowerCase();
                         Map.Entry<Path, Long> workshopFile = workshopFiles.entrySet()
                                 .stream().filter(e -> e.getKey().toAbsolutePath().toString().toLowerCase().endsWith(modfilePatj)).findFirst().get();
                         if(workshopFile.getValue() == mf.getSize()) {
+                            SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(mfModPath + ": Found in Steam-Workshop. Copy."));
                             Files.copy(workshopFile.getKey(), mfPath, StandardCopyOption.REPLACE_EXISTING);
-                            Logger.getLogger(getClass().getName()).log(Level.INFO, "Found workshop file and copied: " + mfPath);
+                            SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(mfModPath + ": Copied"));
                             success++;
                             finnishCurrent();
                             continue;
