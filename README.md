@@ -13,22 +13,46 @@ Open ``gui/src/main/resources/arma3launcher.json`` and edit the variables as you
 To configure your logo replace the _logo\*_ files inside the ``gui/src/main/resources/icons/`` folder.
 
 ### Build
-To build this project simply run
+To build this project you need JDK12+ and maven.  
+To compile a single module run
+```bash
+mvn package -pl {gui/patcher}
+```
+
+To compile the project for distribution you a bundled JRE in ``dist/src/main/resources/jre.zip``.
+A bundled JRE should be an OpenJDK with the following folder structure:
+
+```
+jre.zip
+└── jre
+    ├── bin
+    ├── conf
+    ├── include
+    ├── jmods
+    ├── legal
+    ├── lib
+    └── release
+```
+
+After that run
 ```bash
 mvn package
 ```
 
-After building the package you find the universal auto patcher inside ``patcher/target/patcher.jar``.
-Inside ``gui/target/`` you find the gui as jar, jar with dependencies, jar wrapper build with launch4j and an assembled zip file.
+After building the project for distribution you find the universal auto patcher inside ``patcher/target/patcher.jar``.
+Inside ``gui/target/`` you find the gui as jar and jar with dependencies.
+The jar wrapper build with <a href="https://github.com/libgdx/packr/" target="_blank">packr</a> can be found as an assembled zip file
+inside the ``dis/target/`` folder.
 
 ### Distribute
-After building the package you find inside the ``gui/target/`` folder an zip file.
-This zip file contains an empty ``jre/`` and an empty ``logs/`` folder.
-Bundle your own JRE with minimum JRE12 and put it in the ``*.zip/jre/``.
-The ``jre/`` folder should then contain ``{bin,conf,lib}/``.  
+After building the package you find inside the ``dist/target/`` folder an zip file.
+This zip file contains the bundled ``jre/`` folder and an empty ``logs/`` folder.  
+
+**Please note that the .exe does not have an icon!!**  
+I tried [*rcedit*](https://github.com/electron/rcedit) to edit the resource icon in assembly but many anti virus scanner flag the wrapper than an false positive!
 
 Linux/Mac users can run the *arma3launcher-gui.jar*.  
-Windows users can simply run the *arma3launcher.exe* and the launch4j wrapper prioritize the local JRE else use the bundled jre. 
+Windows users can simply run the *arma3launcher.exe* and the packr wrapper prioritize the local JRE else use the bundled jre. 
 
 ### Server side setup
 For the server side you need a simple webserver with no special configuration.

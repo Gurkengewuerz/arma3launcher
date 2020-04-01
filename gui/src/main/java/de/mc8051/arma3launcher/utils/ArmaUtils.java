@@ -2,12 +2,12 @@ package de.mc8051.arma3launcher.utils;
 
 import de.mc8051.arma3launcher.Parameter;
 import de.mc8051.arma3launcher.Parameters;
+import de.mc8051.arma3launcher.WinRegistry;
 import de.mc8051.arma3launcher.objects.Modset;
-import de.ralleytn.simple.registry.Key;
-import de.ralleytn.simple.registry.Registry;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -23,19 +23,19 @@ import java.util.stream.Collectors;
 public class ArmaUtils {
 
     public static Path getInstallationPath() {
-        Key regKey = null;
+        String regKey = null;
         try {
-            regKey = Registry.getKey(Registry.HKEY_LOCAL_MASHINE + "\\SOFTWARE\\bohemia interactive\\arma 3");
-        } catch (IOException ignored) {
+            regKey = WinRegistry.getValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\bohemia interactive\\arma 3", "main");
+        } catch (IOException | InterruptedException ignored) {
             try {
-                regKey = Registry.getKey("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\bohemia interactive\\arma 3");
-            } catch (IOException e) {
+                regKey = WinRegistry.getValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\bohemia interactive\\arma 3", "main");
+            } catch (IOException | InterruptedException e) {
                 Logger.getLogger(ArmaUtils.class.getName()).log(Level.INFO, "Arma patch cant be detected automatically");
             }
         }
 
         if (regKey == null) return null;
-        final Path main = Paths.get(regKey.getValueByName("main").getRawValue());
+        final Path main = Paths.get(regKey);
         if (!checkArmaPath(main)) return null;
         return main;
     }

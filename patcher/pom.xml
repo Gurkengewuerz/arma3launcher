@@ -58,7 +58,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>${project.groupId}.${parent.artifactId}.Arma3LauncherPatcher</mainClass>
+                            <mainClass>${project.parent.groupId}.${project.parent.artifactId}.Arma3LauncherPatcher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

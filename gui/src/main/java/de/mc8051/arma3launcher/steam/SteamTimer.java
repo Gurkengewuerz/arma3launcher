@@ -1,9 +1,8 @@
 package de.mc8051.arma3launcher.steam;
 
-import de.mc8051.arma3launcher.utils.SteamUtils;
+import de.mc8051.arma3launcher.WinRegistry;
 import de.mc8051.arma3launcher.interfaces.Observer;
-import de.ralleytn.simple.registry.Key;
-import de.ralleytn.simple.registry.Registry;
+import de.mc8051.arma3launcher.utils.SteamUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,31 +16,32 @@ import java.util.logging.Logger;
 public class SteamTimer extends TimerTask {
 
     private static ArrayList<Observer> observers = new ArrayList<>();
+    private static boolean old_steamrunning = false;
     public static boolean steam_running = false;
+    private static boolean old_arma_running = false;
     public static boolean arma_running = false;
+    public static boolean firstRun = false;
 
     @Override
     public void run() {
         String OS = System.getProperty("os.name").toUpperCase();
         if (!OS.contains("WIN")) return;
 
-        boolean old_steamrunning = steam_running;
-        boolean old_arma_running = arma_running;
+        old_steamrunning = steam_running;
+        old_arma_running = arma_running;
 
         try {
-            if(!SteamUtils.findProcess("steam.exe")) {
+            if (!SteamUtils.findProcess("steam.exe")) {
                 steam_running = false;
-                if(old_steamrunning != steam_running) notifyObservers("steamtimer");
+                notifyObservers("steamtimer");
                 return;
             }
 
-            Key activeSteamUserKey = Registry.getKey(Registry.HKEY_CURRENT_USER + "\\Software\\Valve\\Steam\\ActiveProcess");
 
-            String activeSteamUser = activeSteamUserKey.getValueByName("ActiveUser").getRawValue();
-
-            if(activeSteamUser.equals("0x0")) {
+            String activeSteamUser = WinRegistry.getValue("HKEY_CURRENT_USER\\Software\\Valve\\Steam\\ActiveProcess", "ActiveUser");
+            if (activeSteamUser.equals("0x0")) {
                 steam_running = false;
-                if(old_steamrunning != steam_running) notifyObservers("steamtimer");
+                notifyObservers("steamtimer");
                 return;
             }
 
@@ -52,8 +52,8 @@ public class SteamTimer extends TimerTask {
                     || SteamUtils.findProcess("arma3battleye.exe")
                     || SteamUtils.findProcess("arma3launcher.exe");
 
-            if(old_steamrunning != steam_running || old_arma_running != arma_running) notifyObservers("steamtimer");
-        } catch (IOException e) {
+            notifyObservers("steamtimer");
+        } catch (IOException | InterruptedException e) {
             steam_running = false;
             arma_running = false;
             notifyObservers("steamtimer");
@@ -66,6 +66,9 @@ public class SteamTimer extends TimerTask {
     }
 
     public void notifyObservers(String obj) {
-        for(Observer o : observers) o.update(obj);
+        if (old_arma_running != arma_running || old_steamrunning != steam_running || !firstRun) {
+            for (Observer o : observers) o.update(obj);
+            firstRun = true;
+        }
     }
 }

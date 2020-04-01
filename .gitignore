@@ -3,5 +3,5 @@
 out/
 META-INF/
 target/
-gui/target/
-patcher/target/
+*/target/
+dist/src/main/resources/jre.zip
