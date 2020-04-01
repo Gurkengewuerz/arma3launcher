@@ -1190,7 +1190,7 @@ public class LauncherGUI implements Observer {
             lastSynclist = null;
         } else if (s.equals("syncStopped")) {
             final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
-            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()))).start();
+            fileCheck(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()));
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
@@ -1202,7 +1202,7 @@ public class LauncherGUI implements Observer {
             });
         } else if (s.equals("syncComplete")) {
             final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
-            new Thread(() -> fileChecker.check(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()))).start();
+            fileCheck(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()));
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
