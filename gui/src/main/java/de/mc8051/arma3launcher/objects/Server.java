@@ -67,7 +67,7 @@ public class Server {
         list.add("-connect=" + ip);
         list.add("-port=" + port);
         if (!password.isEmpty())
-            list.add("-password=" + ip);
+            list.add("-password=" + password);
         return list;
     }
 }
