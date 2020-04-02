@@ -66,7 +66,7 @@ public class Server {
         ArrayList<String> list = new ArrayList<>();
         list.add("-connect=" + ip);
         list.add("-port=" + port);
-        if (password.isEmpty())
+        if (!password.isEmpty())
             list.add("-password=" + ip);
         return list;
     }
