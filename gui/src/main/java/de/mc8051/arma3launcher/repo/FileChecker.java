@@ -6,7 +6,6 @@ import de.mc8051.arma3launcher.interfaces.Observer;
 import de.mc8051.arma3launcher.objects.AbstractMod;
 import de.mc8051.arma3launcher.objects.Mod;
 import de.mc8051.arma3launcher.objects.ModFile;
-import de.mc8051.arma3launcher.utils.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -123,7 +122,7 @@ public class FileChecker implements Observable {
         return running;
     }
 
-    private void checkFile(String mod, ModFile mf, boolean fastscan) {
+    private boolean checkFile(String mod, ModFile mf, boolean fastscan) {
         logger.debug("Check {}", mf.getLocaleFile().getAbsolutePath());
 
         ArrayList<ModFile> temp = new ArrayList<>();
@@ -135,23 +134,23 @@ public class FileChecker implements Observable {
             addedCount++;
             size += mf.getSize();
             logger.info("File {} not exists", mf.getLocaleFile().getAbsolutePath());
-            return;
+            return true;
         }
 
-
-        if (fastscan || !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum())) {
-            if (mf.getLocalSize() != mf.getSize()) {
-                if (changed.containsKey(mod)) temp = changed.get(mod);
-                temp.add(mf);
-                changed.put(mod, temp);
-                changedCount++;
-                size += mf.getSize();
-                logger.debug("File {} changed", mf.getLocaleFile().getAbsolutePath());
-                return;
-            }
+        if (mf.getLocalSize() != mf.getSize()
+                || mf.getLocalLastModified() != mf.getLastModified()
+                || (!fastscan && !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum()))) {
+            if (changed.containsKey(mod)) temp = changed.get(mod);
+            temp.add(mf);
+            changed.put(mod, temp);
+            changedCount++;
+            size += mf.getSize();
+            logger.debug("File {} changed", mf.getLocaleFile().getAbsolutePath());
+            return true;
         }
 
         logger.debug("File {} is okay", mf.getLocaleFile().getAbsolutePath());
+        return false;
     }
 
     private void checkDeleted() {
@@ -241,5 +240,10 @@ public class FileChecker implements Observable {
     @Override
     public void notifyObservers(String obj) {
         for (Observer obs : observerList) obs.update(obj);
+    }
+
+    public static enum Type {
+        FAST,
+        SLOW
     }
 }

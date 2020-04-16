@@ -28,8 +28,10 @@ public class ModFile implements AbstractMod {
     private String sha1sum;
     private String parent;
     private String localGeneratedSHA1sum = "";
+    private long lastModified = -1;
+    private long localLastModified = -1;
 
-    public ModFile(File f, String modfile, String parent, long size, String sha1sum) {
+    public ModFile(File f, String modfile, String parent, long size, String sha1sum, long lastModified) {
         // File: Abosolut Path
         // modfile: addons/config/something.pbo
         // size: size as in metafile on server
@@ -39,10 +41,11 @@ public class ModFile implements AbstractMod {
         this.modfileString = modfile;
         this.sha1sum = sha1sum.toLowerCase();
         this.parent = parent;
+        this.lastModified = lastModified;
     }
 
-    public ModFile(File f, String modfile, long size, String sha1sum) {
-        this(f, modfile, null, size, sha1sum);
+    public ModFile(File f, String modfile, long size, String sha1sum, long lastModified) {
+        this(f, modfile, null, size, sha1sum, lastModified);
     }
 
     public long getSize() {
@@ -89,6 +92,18 @@ public class ModFile implements AbstractMod {
 
     public String getSHA1Sum() {
         return sha1sum;
+    }
+
+    public long getLocalLastModified() {
+        if (localLastModified <= 0 && exists()) {
+            localLastModified = (int) (f.lastModified() / 1000);
+        }
+
+        return localLastModified;
+    }
+
+    public long getLastModified() {
+        return lastModified;
     }
 
     public String getLocalGeneratedSHA1Sum() {

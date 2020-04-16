@@ -25,7 +25,7 @@ fi
 declare -A SHASUMS
 
 echo "===== ===== ===== GENERATE .ZSYNC ===== ===== ====="
-FILELIST=$(find . -type f ! -path "*/.sync*" ! -path "*.zsync")
+FILELIST=$(find . -type f ! -path '*generateRepo.*' ! -path 'generateRepo.*' ! -path "*/.sync*" ! -path "*.zsync")
 while IFS= read -r line; do
     mustgenerate=false
     zsyncfile="${line}.zsync"
@@ -81,7 +81,7 @@ done <<< "$ZSYNCLIST"
 echo -e "===== ===== ===== ===== ===== =====\n"
 
 echo "===== ===== ===== GENERATE METADATA ===== ===== ====="
-FILELIST=$(find . -maxdepth 1 ! -path "*/.sync*" ! -path "*.zsync" ! -path "." | sed 's|^./||')
+FILELIST=$(find . -maxdepth 1 ! -path '*generateRepo.*' ! -path "*/.sync*" ! -path "*.zsync" ! -path "." | sed 's|^./||')
 declare -a JSONDATA
 while IFS= read -r folder; do
     echo "${folder}"
@@ -93,6 +93,7 @@ while IFS= read -r folder; do
         FILEFOLDER=$(find "${folder}" -type f ! -path "*.zsync" | sed 's|^./||')
         while IFS= read -r folderfile; do
             filebyte=$(wc -c < "${folderfile}")
+            lastModified=$(stat -c %Y "${folderfile}")
 
             if [ $filebyte -eq 0  ]; then
               echo "Skipping \"${folderfile}\" because file is empty"
@@ -101,7 +102,7 @@ while IFS= read -r folder; do
 
             foldersize=$(expr $foldersize + $filebyte)
             name=$(echo "${folderfile}" | cut -d"/" -f2-)
-            x="\"${name}\":{\"size\": ${filebyte}, \"sha1\": \"${SHASUMS[$folderfile]}\"},${x}"
+            x="\"${name}\":{\"size\": ${filebyte}, \"sha1\": \"${SHASUMS[$folderfile]}\", \"lastModified\": ${lastModified}},${x}"
         done <<< "$FILEFOLDER"
         x=$(echo ${x} | rev | cut -c2- | rev)
 
@@ -113,10 +114,11 @@ while IFS= read -r folder; do
     else
         echo "is file"
         filebyte=$(wc -c < "${folder}")
+        lastModified=$(stat -c %Y "${folderfile}")
         if [ $filebyte -eq 0  ]; then
          continue
         fi
-        JSONDATA+=( "\"${folder}\": {\"size\":${filebyte}, \"sha1\": \"${SHASUMS[$folder]}\"}" )
+        JSONDATA+=( "\"${folder}\": {\"size\":${filebyte}, \"sha1\": \"${SHASUMS[$folder]}\", \"lastModified\": ${lastModified}}" )
     fi
 done <<< "$FILELIST"
 
