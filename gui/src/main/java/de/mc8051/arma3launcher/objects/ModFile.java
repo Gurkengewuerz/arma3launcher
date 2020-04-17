@@ -29,7 +29,6 @@ public class ModFile implements AbstractMod {
     private String parent;
     private String localGeneratedSHA1sum = "";
     private long lastModified = -1;
-    private long localLastModified = -1;
 
     public ModFile(File f, String modfile, String parent, long size, String sha1sum, long lastModified) {
         // File: Abosolut Path
@@ -95,11 +94,7 @@ public class ModFile implements AbstractMod {
     }
 
     public long getLocalLastModified() {
-        if (localLastModified <= 0 && exists()) {
-            localLastModified = (int) (f.lastModified() / 1000);
-        }
-
-        return localLastModified;
+        return (int) (f.lastModified() / 1000);
     }
 
     public long getLastModified() {

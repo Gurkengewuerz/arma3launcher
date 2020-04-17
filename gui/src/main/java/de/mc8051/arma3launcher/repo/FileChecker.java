@@ -137,15 +137,18 @@ public class FileChecker implements Observable {
             return true;
         }
 
-        if (mf.getLocalSize() != mf.getSize()
-                || mf.getLocalLastModified() != mf.getLastModified()
-                || (!fastscan && !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum()))) {
+        int reason = -1;
+        if(mf.getLocalSize() != mf.getSize()) reason = 0;
+        else if (mf.getLocalLastModified() != mf.getLastModified()) reason = 1;
+        else if (!fastscan && !mf.getSHA1Sum().equalsIgnoreCase(mf.getLocalGeneratedSHA1Sum())) reason = 2;
+
+        if (reason != -1) {
             if (changed.containsKey(mod)) temp = changed.get(mod);
             temp.add(mf);
             changed.put(mod, temp);
             changedCount++;
             size += mf.getSize();
-            logger.debug("File {} changed", mf.getLocaleFile().getAbsolutePath());
+            logger.debug("File {} changed. Reason: {}", mf.getLocaleFile().getAbsolutePath(), reason);
             return true;
         }
 

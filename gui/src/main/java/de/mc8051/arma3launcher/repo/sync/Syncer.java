@@ -161,6 +161,14 @@ public class Syncer implements Observable, SyncListener {
                             logger.info("ZSync - Copied");
                             SwingUtilities.invokeLater(() -> gui.syncStatusLabel.setText(mfModPath + ": Copied"));
                             success++;
+
+                            long lastMotified = mf.getLastModified() * 1000;
+                            if (mf.getLocaleFile().setLastModified(lastMotified)) {
+                                logger.debug("ZSync - set last motified to {}", lastMotified);
+                            } else {
+                                logger.debug("ZSync - Failed to set last modified!");
+                            }
+
                             finnishCurrent();
                             continue;
                         }
@@ -267,6 +275,16 @@ public class Syncer implements Observable, SyncListener {
         final int i = success + failed;
         final int percentage = (int) ((double) i / (double) Long.valueOf(syncCount).intValue() * 100);
         final String modPath = currentDownload.getModPath();
+
+
+        if(!currentDownload_failed) {
+            long lastMotified = currentDownload.getLastModified() * 1000;
+            if (currentDownload.getLocaleFile().setLastModified(lastMotified)) {
+                logger.debug("ZSync - set last motified to {}", lastMotified);
+            } else {
+                logger.debug("ZSync - Failed to set last modified!");
+            }
+        }
 
         SwingUtilities.invokeLater(() -> {
             gui.syncDownloadProgress.setValue(i);

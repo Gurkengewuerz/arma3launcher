@@ -1244,7 +1244,6 @@ public class LauncherGUI implements Observer {
             techCheck();
         } else if (s.equals("syncStopped")) {
             final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
-            fileCheck(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()));
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
@@ -1253,11 +1252,14 @@ public class LauncherGUI implements Observer {
                 syncStatusLabel.setText("Sync stopped");
                 TaskBarUtils.getInstance().setValue(0);
                 TaskBarUtils.getInstance().off();
+
+                if (workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()) checkType = FileChecker.Type.SLOW;
+                else checkType = FileChecker.Type.FAST;
+                RepositoryManger.getInstance().refreshModset();
             });
             techCheck();
         } else if (s.equals("syncComplete")) {
             final Parameter workshopParameter = Parameters.USE_WORKSHOP.toParameter();
-            fileCheck(!(workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()));
             SwingUtilities.invokeLater(() -> {
                 syncDownloadButton.setEnabled(false);
                 syncDownloadAbortButton.setEnabled(false);
@@ -1268,6 +1270,10 @@ public class LauncherGUI implements Observer {
                 TaskBarUtils.getInstance().off();
                 TaskBarUtils.getInstance().attention();
                 TaskBarUtils.getInstance().notification("Sync complete", "", TrayIcon.MessageType.INFO);
+
+                if (workshopParameter.getValue() != null && (boolean) workshopParameter.getValue()) checkType = FileChecker.Type.SLOW;
+                else checkType = FileChecker.Type.FAST;
+                RepositoryManger.getInstance().refreshModset();
             });
             techCheck();
         } else if (s.equals("syncContinue")) {
@@ -1315,6 +1321,7 @@ public class LauncherGUI implements Observer {
         syncIntensiveCheckButton.setEnabled(false);
         syncFastCheckButton.setEnabled(false);
         syncCheckAbortButton.setEnabled(true);
+        syncCheckProgress.setValue(0);
         syncCheckStatusLabel.setText("Running!");
         new Thread(() -> fileChecker.check(fastscan)).start();
 
@@ -1324,6 +1331,10 @@ public class LauncherGUI implements Observer {
 
         repoTree.setCheckboxesEnabled(false);
         repoTree.setCheckboxesChecked(false);
+
+        syncSizeLabel.setText("0.0 B/0.0 B");
+        syncFileCountLabel.setText("");
+        syncDownloadSpeedLabel.setText("");
 
         playButton.setEnabled(false);
         playPresetButton.setEnabled(false);
