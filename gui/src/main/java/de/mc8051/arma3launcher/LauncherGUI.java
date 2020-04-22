@@ -783,7 +783,6 @@ public class LauncherGUI implements Observer {
                 String sPath = path.getAbsolutePath();
                 if (!ArmaUtils.checkArmaPath(path.toPath())) {
                     SwingUtilities.invokeLater(() -> warnBox(LangUtils.getInstance().getString("not_arma_dir_msg"), LangUtils.getInstance().getString("not_arma_dir")));
-                    return false;
                 }
 
                 String modPath = ArmA3Launcher.user_config.get("client", "modPath");
