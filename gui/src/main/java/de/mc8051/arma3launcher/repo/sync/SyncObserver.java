@@ -104,4 +104,15 @@ public class SyncObserver extends ZsyncStatsObserver {
         listener.bytesDownloaded(bytes);
     }
 
+    @Override
+    public void bytesToDownload(long bytes) {
+        super.bytesToDownload(bytes);
+        listener.bytesToDownload(bytes);
+    }
+
+    @Override
+    public void downloaded(long bytes) {
+        super.downloaded(bytes);
+        listener.downloaded(bytes);
+    }
 }

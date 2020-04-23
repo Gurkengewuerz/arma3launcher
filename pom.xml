@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <gui.version>0.1.1009</gui.version>
+        <gui.version>0.1.1010</gui.version>
     </properties>
 
     <groupId>de.mc8051</groupId>

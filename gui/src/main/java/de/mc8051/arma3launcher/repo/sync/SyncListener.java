@@ -26,4 +26,6 @@ public interface SyncListener {
     public void zsyncComplete();
     public void zsyncFailed(Exception exception);
     public void zsyncStarted(Zsync.Options options);
+    public void bytesToDownload(long bytes);
+    public void downloaded(long bytes);
 }

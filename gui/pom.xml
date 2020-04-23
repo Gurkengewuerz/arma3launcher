@@ -43,7 +43,7 @@
         <dependency>
             <groupId>com.github.Gurkengewuerz</groupId>
             <artifactId>zsyncer</artifactId>
-            <version>1de0d3f651</version>
+            <version>3d0e1072e6</version>
         </dependency>
         <dependency>
             <groupId>com.jgoodies</groupId>

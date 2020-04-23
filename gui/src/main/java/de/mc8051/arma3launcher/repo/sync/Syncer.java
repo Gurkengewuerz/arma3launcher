@@ -53,16 +53,16 @@ public class Syncer implements Observable, SyncListener {
     private long syncSize;
     private int syncCount;
 
-    private int syncRealCount;
+    private long syncRealCount;
 
     private SyncObserver syncObserver;
 
     private long speedCalcSize = 0L;
     private long speedCalcTime = 0L;
 
-    private long downloadDownloaded = 0L;
     private long downloadStarted = 0L;
     private long downloadSize = 0L;
+    private long currentDownloadDownloaded = 0L;
 
     private Zsync zsync;
     private LauncherGUI gui;
@@ -86,16 +86,15 @@ public class Syncer implements Observable, SyncListener {
         failed = 0;
         success = 0;
 
-        speedCalcSize = 0;
-        speedCalcTime = 0;
-
         syncRealCount = 0;
 
         syncSize = ml.getSize();
         syncCount = ml.getCount();
         SwingUtilities.invokeLater(() -> {
-            gui.syncDownloadProgress.setMaximum(syncCount);
+            gui.syncDownloadProgress.setMaximum(100);
             gui.syncDownloadProgress.setValue(0);
+            gui.syncDownloadFileProgress.setMaximum(100);
+            gui.syncDownloadFileProgress.setValue(0);
             TaskBarUtils.getInstance().normal();
         });
 
@@ -182,6 +181,7 @@ public class Syncer implements Observable, SyncListener {
                 try {
                     currentDownload = mf;
                     currentDownload_failed = false;
+                    downloadStarted = 0;
 
                     syncObserver = new SyncObserver(this);
                     zsync.zsync(URI.create(mf.getRemoteFile() + ".zsync"), o, syncObserver);
@@ -252,28 +252,15 @@ public class Syncer implements Observable, SyncListener {
 
     @Override
     public void zsyncComplete() {
-        speedCalcSize+=downloadDownloaded;
-        speedCalcTime+=System.currentTimeMillis()-downloadStarted;
-
-        if (speedCalcSize > 20 * 1024 * 1024) {
-            final double speedByte = ((double)speedCalcSize)/((double)speedCalcTime /1000);
-            logger.info("ZSync - download speed: {} bytes/s", speedByte);
-            SwingUtilities.invokeLater(() -> gui.syncDownloadSpeedLabel.setText(Humanize.binaryPrefix(Double.valueOf(speedByte).longValue()) + "/s"));
-            speedCalcSize = 0L;
-            speedCalcTime = 0L;
-        }
-
         logger.info("ZSync - complete");
 
         if (currentDownload_failed)
             failed++;
         else success++;
 
-        syncRealCount+=downloadDownloaded;
+        syncRealCount += currentDownloadDownloaded;
 
-        final long finalSize = syncSize - ((syncSize - modlist.getSize() + currentDownload.getSize()) - syncRealCount);
         final int i = success + failed;
-        final int percentage = (int) ((double) i / (double) Long.valueOf(syncCount).intValue() * 100);
         final String modPath = currentDownload.getModPath();
 
 
@@ -287,17 +274,14 @@ public class Syncer implements Observable, SyncListener {
         }
 
         SwingUtilities.invokeLater(() -> {
-            gui.syncDownloadProgress.setValue(i);
+            gui.syncDownloadFileProgress.setValue(0);
+            gui.syncDownloadFileProgress.setString("");
             gui.syncFileCountLabel.setText(i + "/" + syncCount + " (" + failed + " failed)");
-            gui.syncSizeLabel.setText(Humanize.binaryPrefix(syncRealCount) + "/" + Humanize.binaryPrefix(finalSize));
 
             if (currentDownload_failed)
                 gui.syncStatusLabel.setText(modPath + ": Sync failed");
             else
                 gui.syncStatusLabel.setText(modPath + ": Sync finished");
-
-            gui.syncDownloadProgress.setString(percentage + " %");
-            TaskBarUtils.getInstance().setValue(percentage);
         });
 
         finnishCurrent();
@@ -350,9 +334,6 @@ public class Syncer implements Observable, SyncListener {
 
     @Override
     public void remoteFileDownloadingStarted(long length) {
-        downloadDownloaded = 0;
-        downloadSize = length;
-
         logger.info("ZSync - remote file downloading started: {} bytes", length);
     }
 
@@ -363,7 +344,6 @@ public class Syncer implements Observable, SyncListener {
 
     @Override
     public void bytesDownloaded(long bytes) {
-        downloadDownloaded += bytes;
     }
 
     public boolean isStopped() {
@@ -407,5 +387,51 @@ public class Syncer implements Observable, SyncListener {
     @Override
     public void notifyObservers(String obj) {
         for (Observer obs : observerList) obs.update(obj);
+    }
+
+    @Override
+    public void bytesToDownload(long bytes) {
+        downloadSize = bytes;
+        currentDownloadDownloaded = 0;
+        speedCalcSize = 0;
+        speedCalcTime = 0;
+        logger.debug("Must download {} bytes", bytes);
+    }
+
+    @Override
+    public void downloaded(long bytes) {
+        if(downloadStarted == 0) return;
+        currentDownloadDownloaded += bytes;
+        final int percentageFile = (int) (Long.valueOf(currentDownloadDownloaded).doubleValue() / Long.valueOf(downloadSize).doubleValue() * 100);
+        final String humanCurrent = Humanize.binaryPrefix(currentDownloadDownloaded);
+        final String humanDownloadSize = Humanize.binaryPrefix(downloadSize);
+
+        final long downloadProgress = syncRealCount + currentDownloadDownloaded;
+        final String humanProgress = Humanize.binaryPrefix(downloadProgress);
+        final long finalSize =  syncRealCount + modlist.getSize();
+        final String humanfinalSize = Humanize.binaryPrefix(finalSize);
+        final int percentage = (int) (Long.valueOf(downloadProgress).doubleValue() / Long.valueOf(finalSize).doubleValue() * 100);
+
+        speedCalcSize+=currentDownloadDownloaded;
+        speedCalcTime+=System.currentTimeMillis()-downloadStarted;
+
+        if (speedCalcSize > 20 * 1024 * 1024) {
+            final double speedByte = ((double)speedCalcSize)/((double)speedCalcTime /1000);
+            SwingUtilities.invokeLater(() -> gui.syncDownloadSpeedLabel.setText(Humanize.binaryPrefix(Double.valueOf(speedByte).longValue()) + "/s"));
+            speedCalcSize = 0L;
+            speedCalcTime = 0L;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            gui.syncDownloadFileProgress.setValue(percentageFile);
+            gui.syncDownloadFileProgress.setString(humanCurrent + "/" + humanDownloadSize);
+
+            gui.syncDownloadProgress.setValue(percentage);
+            gui.syncDownloadProgress.setString(percentage + " %");
+
+            gui.syncSizeLabel.setText(humanProgress + "/" + humanfinalSize);
+
+            TaskBarUtils.getInstance().setValue(percentage);
+        });
     }
 }
