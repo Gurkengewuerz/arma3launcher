@@ -1,0 +1,40 @@
+kind: pipeline
+type: docker
+name: build-java-amd64
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  - name: build
+    image: adoptopenjdk/openjdk12:alpine
+    commands:
+      - cat /etc/issue
+      - java -version
+      - apk add maven
+      - mvn -version
+      - mvn package -pl patcher
+      - mvn package -pl gui
+      - ls -lah gui/target
+      - ls -lah patcher/target
+  - name: artifacts
+    image: alpine:latest
+    commands:
+      - cat /etc/issue
+      - apk add --no-cache openssh-client ca-certificates sshpass
+      - mkdir -p ~/.ssh
+      - chmod 700 ~/.ssh
+      - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+      - export REMOTE_PATH=/data/${DRONE_REPO_OWNER}/${DRONE_REPO_NAME}/${DRONE_REPO_BRANCH}/${DRONE_COMMIT_SHA}/
+      - export SSHPASS=$${REMOTE_PASSWORD}
+      - sshpass -e ssh $${REMOTE_USERNAME}@$${REMOTE_HOST} "mkdir -p $REMOTE_PATH"
+      - "sshpass -e scp -r gui/target/*.jar $${REMOTE_USERNAME}@$${REMOTE_HOST}:$REMOTE_PATH"
+      - "sshpass -e scp -r patcher/target/*.jar $${REMOTE_USERNAME}@$${REMOTE_HOST}:$REMOTE_PATH"
+    environment:
+      REMOTE_USERNAME:
+        from_secret: remote_username
+      REMOTE_PASSWORD:
+        from_secret: remote_password
+      REMOTE_HOST:
+        from_secret: remote_host
