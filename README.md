@@ -1,4 +1,6 @@
 # Custom ArmA 3 Launcher
+[![Build Status](https://giteaci.mc8051.de/api/badges/Gurkengewuerz/arma3launcher/status.svg?ref=refs/heads/master)](https://giteaci.mc8051.de/Gurkengewuerz/arma3launcher) [Artifacts](https://artifacts.mc8051.de/Gurkengewuerz/arma3launcher)
+
 This is the official launcher/download-client of <a href="https://the-town.net/" target="_blank">the-town.net</a>.  
 
 This launcher uses a differential download method called <a href="http://zsync.moria.org.uk/" target="_blank">zsync</a>.
